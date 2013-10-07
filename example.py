@@ -1,9 +1,8 @@
-from modal import Relation
 from modal import Frame
 from modal import Model
 
-R1 = Relation({('a', 'b'), ('a', 'c'), ('b', 'a')}, 2)
-R2 = Relation({('a', 'a'), ('b', 'b'), ('c', 'c'), ('a', 'b'), ('b', 'a')}, 2)
+R1 = {('a', 'b'), ('a', 'c'), ('b', 'a')}
+R2 = {('a', 'a'), ('b', 'b'), ('c', 'c'), ('a', 'b'), ('b', 'a')}
 
 W1 = {'a','b'}
 W2 = {'a', 'b', 'c'} 
