@@ -12,3 +12,4 @@ Some goals and todo's
 + compute bisimularity of models/worlds at models
 + compute modal equivalence
 + (graphical) drawing of frames
++ frame.get_tau_type
