@@ -1,5 +1,4 @@
-from modal import Frame
-from modal import Model
+import modal
 
 R1 = {('a', 'b'), ('a', 'c'), ('b', 'a')}
 R2 = {('a', 'a'), ('b', 'b'), ('c', 'c'), ('a', 'b'), ('b', 'a')}
@@ -8,15 +7,31 @@ W1 = {'a','b'}
 W2 = {'a', 'b', 'c'} 
 
 
-F1 = Frame(W1,[R1])
-F2 = Frame(W2,[R2])
+F1 = modal.Frame()
+F2 = modal.Frame()
 
-print("F1:")
+F1.add_multiple_worlds(W1)
+F2.add_multiple_worlds(W2)
+
+F1.add_relation("R1", 2)
+F2.add_relation("R1", 2)
+F2.add_relation("R2", 2)
+
+F1.add_multiple_to_relation("R1", R1)
+F2.add_multiple_to_relation("R1", R1)
+F2.add_multiple_to_relation("R2", R2)
+
 print(F1)
 
-print("F2:")
 print(F2)
 
+M1 = modal.Model(F1)
+M3 = modal.Model()
+
+print(M1)
+
+print(M3)
+"""
 print("F2 + F1:")
 print(F1 + F2)
 
@@ -33,3 +48,4 @@ print(M2)
 
 print("M1 + M2")
 print(Model(F1+F2, V))
+"""
