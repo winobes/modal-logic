@@ -13,3 +13,4 @@ Some goals and todo's
 + compute modal equivalence
 + (graphical) drawing of frames
 + ~~frame.get_tau_type~~
++ debug make_tableau for one-place constants
