@@ -1,4 +1,4 @@
-import modal
+import structure 
 
 R1 = {('a', 'b'), ('a', 'c'), ('b', 'a')}
 R2 = {('a', 'a'), ('b', 'b'), ('c', 'c'), ('a', 'b'), ('b', 'a')}
@@ -7,8 +7,8 @@ W1 = {'a','b'}
 W2 = {'a', 'b', 'c'} 
 
 
-F1 = modal.Frame()
-F2 = modal.Frame()
+F1 = structure.Frame()
+F2 = structure.Frame()
 
 F1.add_multiple_worlds(W1)
 F2.add_multiple_worlds(W2)
@@ -25,13 +25,14 @@ print(F1)
 
 print(F2)
 
-M1 = modal.Model(F1)
-M3 = modal.Model()
+M1 = structure.Model(F1)
+M3 = structure.Model()
 
+"""
 print(M1)
 
 print(M3)
-"""
+
 print("F2 + F1:")
 print(F1 + F2)
 
