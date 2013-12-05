@@ -1,52 +1,34 @@
 import structure 
+import syntax
 
-R1 = {('a', 'b'), ('a', 'c'), ('b', 'a')}
-R2 = {('a', 'a'), ('b', 'b'), ('c', 'c'), ('a', 'b'), ('b', 'a')}
+F1 = structure.Frame(set(), set())
+F2 = structure.Frame(set(), set())
 
-W1 = {'a','b'}
-W2 = {'a', 'b', 'c'} 
+F1.add_worlds({'w','u', 'v'})
+F2.add_worlds(set(range(10)))
 
+F1.add_edges({('w', 'v'), ('v', 'v'), ('v', 'w'), ('w', 'u')})
+F2.add_edges({(s,t) for s in F2.W for t in F2.W if s < t})
 
-F1 = structure.Frame()
-F2 = structure.Frame()
+print(F1, '\n')
+print(F2, '\n')
 
-F1.add_multiple_worlds(W1)
-F2.add_multiple_worlds(W2)
+V1 = {'p': {'w','v','u'}, 'q': {'w','u'}, 'r': {'v'}}
+V2 = {'p': {s for s in F2.W if s % 2 == 0}, 'q': {t for t in F2.W if t % 2 == 1}}
 
-F1.add_relation("R1", 2)
-F2.add_relation("R1", 2)
-F2.add_relation("R2", 2)
+M1 = structure.Model(F1,V1)
+M2 = structure.Model(F2,V2)
 
-F1.add_multiple_to_relation("R1", R1)
-F2.add_multiple_to_relation("R1", R1)
-F2.add_multiple_to_relation("R2", R2)
+print(M1, '\n')
+print(M2, '\n')
 
-print(F1)
+# Call syntax.Language with no arguments for basic modal language (default).
+BML = syntax.Language()
 
-print(F2)
+# phi = (◻ p ∧ (◇ r ∨ ¬(r → ◻ q)))
+phi = syntax.parse_formula(BML, "\u25FB p \u2227 (\u25C7 r \u2228 \u00AC(r \u2192 \u25FB q))")
+# psi = (p ∧ q)
+psi = syntax.parse_formula(BML, "p \u2227 q")
 
-M1 = structure.Model(F1)
-M3 = structure.Model()
-
-"""
-print(M1)
-
-print(M3)
-
-print("F2 + F1:")
-print(F1 + F2)
-
-V = {'p': {'a','b','c'}, 'q': {'c'}, 'r': {'b','c'}}
-
-M1 = Model(F1,V)
-M2 = Model(F2,V)
-
-print("M1:")
-print(M1)
-
-print("M2:")
-print(M2)
-
-print("M1 + M2")
-print(Model(F1+F2, V))
-"""
+print("phi =", phi)
+print("psi =", psi)
