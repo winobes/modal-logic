@@ -1,78 +1,122 @@
-def main_connective(language, formula, offset = 0):
-    """
-    Finds the main connective in a formula and returns its index.
-    """
-    if not formula.count('(') == formula.count(')'):
-        raise ValueError("formula contains non-matching brackets")
-    elif formula.count('(') == 0:
-        for two_place in [symbol for symbol in language.lexicon if language.n_place(symbol) == 2]:
-            if not formula.find(two_place) == -1:
-                return formula.find(two_place) + offset
-        print("offset = " + str(offset))
-        return 0 + offset
-    else:
-        i = 0
-        c = 0
-        paren = False
-        for ch in formula:
-            c += 1
-            if ch == '(': 
-                i += 1
-                paren = True
-            if ch == ')': 
-                i -= 1
-                paren = True
-            if i == 0 and paren == True:
-                if c == len(formula):
-                    if not formula[0] == '(':
-                        print("offset = " + str(offset))
-                        return 0 + offset
-                    return main_connective(language, formula[1:-1], offset + 1)
-                else: 
-                    print("offset = " + str(offset))
-                    print("count = " + str(c))
-                    return c + offset
+import itertools
 
-def make_tableau(language, formula):
+default_language = [{'p','q','r'},
+                    [{'\u22A5'}, # bottom
+                    {'\u00AC'}, # lnot 
+                    {'\u2227', '\u2228', '\u2192'}], # wedge, vee, arrow
+                    ('\u25C7', '\u25FB'), # diamond, box
+                    {('(',')'), ('[',']'), ('{','}')}
+                   ] 
+                            
+
+class Language:
+    """
+    A basic modal language consists of:
+    - a set of propositions (one character strings)
+    - a list of sets of constants (list position is arity) 
+    - a modal operator and it's dual 
+    - a a set of pairs of opening and closing brackets 
+    """
+    def __init__(self, prop = None, 
+                       constants = None, 
+                       modality = None, 
+                       brackets = None):
+        if prop == None:
+            prop = default_language[0]
+        self.prop = prop
+        if constants == None:
+            constants = default_language[1] 
+        self.constants = constants
+        if modality == None:
+            modality = default_language[2] 
+        self.modality = modality
+        if brackets == None:
+            brackets = default_language[3] 
+        self.brackets = brackets
+        
+    def __repr__(self):
+        return ('language' + '(' + str(self.prop) + ', ' +
+                str(self.constants) + ', ' + 
+                str(self.modality) + ', ' +
+                str(self.brackets) + ')')
+
+def parse_formula(L, formula):
     """
     Takes a formula as a string and gives it a tableau form for
-    easier parsing by other functions (e.g. valuation, satisfation).
+    easier parsing by other functions (e.g. valuation, satisfaction).
     The language argument lets the function know how to interpret 
     the symbols (i.e. as connectives, modal operators, propositions).
-    Properly formatted formulas must include all but the outtermost
+    Properly formatted formulas must include all but the outermost
     parenthesis, and may include spaces for better readability.
 
     tableau("p ∧ q") = ['∧', 'p', 'q']
 
     tableau("◇ p ∧ q") = ['∧', ['◇', 'p'], 'q']
 
-    tableau("◇ p ∧ (q →  ¬(p ∨ □ q))") =
-    ['∧', ['◇', 'p'],  ['→ ', 'q', ['¬', ['∨', 'p', ['□ ','q']]]]]
+    tableau("◇ p ∧ (q →  ¬(p ∨ ◻ q))") =
+    ['∧', ['◇', 'p'],  ['→ ', 'q', ['¬', ['∨', 'p', ['◻ ','q']]]]]
     """
+    
+    # Remove whitespace from the formula.
+    formula = ''.join(formula.split())
     tableau = []
-    formula = formula.replace(' ','')
-    print("now parsing " + formula)
-    if formula[0]  == '(' and formula.count('(') > formula.count(')'):
-        formula = formula[1:]
-    if formula[-1] == ')' and formula.count(')') > formula.count('('):
-        print("fixing extra ')'")
-        formula = formula[:-1]
-    if len(formula) == 1:
-        tableau = formula
-    else:
-        connective = main_connective(language, formula)
-        print("appending the connective")
-        tableau.append(formula[connective])
-        if language.n_place(formula[connective]) == 1:
-            print("(it's a one-place)")
-            tableau.append(make_tableau(language, formula[1:]))
-        elif language.n_place(formula[connective]) == 2:
-            print("(it's a two-place)")
-            tableau.append(make_tableau(language, formula[:connective]))
-            tableau.append(make_tableau(language, formula[connective + 1:]))
-    return tableau
-            
+    
 
+    # If it's atomic, return.
+    if len(formula) == 1:
+        if formula in L.prop:
+            return formula
+        else: raise ValueError("unexpected character; expected a proposition")
+    
+    # First partition by subformulas.
+    partition = [[]]
+    bracket_stack = []
+    i = 0 # Index of current subformula/partition.
+    for ch in formula:
+        partition[i].append(ch)
+        if ch in {pair[0] for pair in L.brackets}:
+            bracket_stack.append(ch)
+        elif ch in {pair[1] for pair in L.brackets}:
+            if not (bracket_stack[-1], ch) in L.brackets:
+                raise ValueError("mismatched brackets")
+            bracket_stack.pop()
+            # If the bracket we just popped was the last in the stack,
+            # then we are at the end of a subformula.
+            if bracket_stack == []: 
+                i += 1
+                partition.append([])
+        elif bracket_stack == []:
+        # If the bracket stack is empty, propositions and 0-place 
+        # logical constants are get theirl lown partitiony.
+        # Likewise for constants of arity >2; they deliminate subformulas.
+            if (((len(L.constants)) > 0 and ch in L.constants[0]) or
+               ch in L.prop):
+                i += 1
+                partition.append([])    
+            if (len(L.constants) > 2 and 
+               any(ch in constants for constants in L.constants[2:])):
+                i += 1 
+                partition.append([])
+    partition = partition[:-1]
+
+    # Either we need to remove outter brackets, or a unary operator is
+    # the main connective.
+    if len(partition) == 1:
+        if (partition[0][0], partition[0][-1]) in L.brackets:
+            tableau = parse_formula(L, formula[1:-1])
+        elif partition[0][0] in L.constants[1] or partition[0][0] in L.modality:
+            tableau = [partition[0][0], parse_formula(L, formula[1:])]
+        else: 
+            raise ValueError("can not partition formula")
+    else:
+        for sub in partition: 
+            if (len(sub) == 1 and 
+                sub[0] in {const for const in itertools.chain(*L.constants)}):
+                tableau = [sub[0]] + \
+                          [parse_formula(L, ''.join(form)) \
+                          for form in partition if not form[0] == sub[0]]
+
+    return tableau
 
 class logical_constant:
     """
@@ -103,7 +147,7 @@ class logical_constant:
                  str(self.place) + ', ' + str(self.interpretation) + ')')
 
 class modal_operator:
-    """l
+    """
     A modal operator has some arity (correspoding to the arity of a
     relation in a structure), a symbol and optionally a symbol for its
     dual (if no dual, initialize with None).
@@ -117,37 +161,3 @@ class modal_operator:
     def __repr__(self):
         return ('modal_operator(' + '"' + str(symbol) + '"' +  ', ' + 
                 '"' + str(dual) + '"' + ', ' + str(arity) + ')')
-
-class language:
-    """
-    A language consists of:
-    - a set of propositions (one character strings)
-    - a set of logical constants
-    - a set of modal operators
-    - a dictionary from symbols to their objects
-    """
-    def __init__(self, propositions, constants, modal_operators):
-        self.P = propositions
-        self.C = constants
-        self.O = modal_operators
-        self.lexicon = dict( list({p:p for p in self.P}.items()) +
-                             list({c.symbol:c for c in self.C}.items()) +
-                             list({o.symbol:o for o in self.O}.items())
-                           ) 
-
-    def n_place(self, symbol):
-        """
-        Returns the number of places of an operator or logical constant (or
-        0 for a proposition)
-        """
-        if self.lexicon[symbol] in self.P: 
-            return 0
-        if self.lexicon[symbol] in self.C:
-            return self.lexicon[symbol].place
-        if self.lexicon[symbol] in self.O:
-            return 1
-        else: return None
-
-    def __repr__(self):
-        return ('language' + '(' + str(self.P) + ', ' +
-                str(self.C) + ', ' + str(self.O) + ')')
