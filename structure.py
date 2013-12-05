@@ -91,8 +91,9 @@ class Model(Frame):
                 if w in self.V[p]:
                     self.V[p].remove(w)
 
-    def __repr__(self)
-        return ('Model(' + 'Frame(' + str(self.W) + ', ' + str(self.R) + ')' + str(self.V) + ')')
+    def __repr__(self):
+        return ('Model(' + 'Frame(' + str(self.W) + ', ' + str(self.R) + '), ' 
+                + str(self.V) + ')')
 
     def __str__(self):
         return 'W = ' + str(self.W) + '\n' + 'R = ' + str(self.R) + '\n' + 'V = ' + str(self.V)
