@@ -1,25 +1,18 @@
 class Frame:
     """
     A frame has three parts:
-    - a set of world lables (can be any hashable object)
-    - a dictionary from relation names (should be strings) to arities
-    - a dictionary from relation names to sets of n-tuples of world lables
-      (where n is the arity of the relation)
-    It may be a good idea to use the associated modal operator as the name
+    - W, a set of worlds (worlds can be any hashable object)
+    - R, a binary relation on W (a set of two-tuples of elemest of W)
     for the relation.
     """
            
-    def __init__(self, name = 'F', W = set(), R = {}, arity = {},):
-        self.W = W 
-        self.R = R 
-        self.arity = arity 
-        self.name = name 
-
-    def set_name(self, name):
-        if type(name) == str:
-            self.name = name
-        else:
-            raise TypeError("the name of a structure must be a string")
+    def __init__(self, W = None, R = None):
+        self.W = set()
+        if not W == None:
+            self.add_worlds(W)
+        self.R = set()
+        if not R == None:
+            self.add_edges(R)
 
     def add_world(self, w):
         self.W.add(w)
@@ -28,62 +21,48 @@ class Frame:
         if w in self.w:
             self.W.remove(w)
 
-    def add_multiple_worlds(self, worlds):
+    def add_worlds(self, worlds):
         for w in worlds: self.add_world(w)
 
-    def remove_multiple_worlds(self, worlds):
+    def remove_worlds(self, worlds):
         for w in worlds: self.remove_world(w)
 
-    def add_relation(self, operator, arity):
-        self.R[operator] = set()
-        self.arity[operator] = arity
-
-    def remove_relation(self, name):
-        if name in self.R: 
-            del self.R[name]
-            del self.arity[name]
-
-    def add_to_relation(self, operator, relation):
-        if len(relation) == self.arity[operator]:
-            for w in relation:
+    def add_edge(self, edge):
+        if len(edge) == 2:
+            for w in edge:
                 if not w in self.W:
                     self.add_world(w)
-            self.R[operator].add(tuple(relation))
+            self.R.add(tuple(edge))
         else: raise ValueError("wrong arity for that relation")
 
-    def remove_from_relation(self, operator, relation):
-        if relation in self.R[name]:
-            self.R[operator].remove(tuple(relation))
+    def remove_edge(self, edge):
+        if edge in self.R: 
+            self.R.remove(tuple(edge))
 
-    def add_multiple_to_relation(self, operator, relations):
-        for r in relations: self.add_to_relation(operator, r)
+    def add_edges(self, edges):
+        for edge in edges: self.add_edge(edge)
     
-    def remove_multiple_from_relation(self, operator, relations):
-        for r in relations: self.remove_from_relation(operator, r)
+    def remove_edges(self, edges):
+        for edge in edges: self.remove_edge(edge)
 
     def __repr__(self):
-        return ('Frame(' + repr(self.name) + ', ' + str(self.W) + ', ' +
-                str(self.R) + ', ' + str(self.arity) + ')')
+        return ('Frame(' + str(self.W) + ', ' + str(self.R) + ')')
 
     def __str__(self):
-        relation_names = ''
-        for r in self.R: relation_names += str(r) + ', '
-        description = self.name + ' = (W, (' + relation_names[:-2:] + '))'
-        relations = ''
-        for r in self.R: relations += str(r) + ' = ' + str(self.R[r]) + '\n'
-        return (description + '\n' + 'W = ' + str(self.W) + '\n' + relations)
+        return 'W = ' +  str(self.W) + '\n' + 'R = ' + str(self.R)
 
 class Model(Frame):
     """
     A model is a frame along with a valuation. A valuation is a dictionary
     from propositions to a set of worlds. A proposition can be any hashable
-    object. 
+    object, but character strings are the obvious choice.
     """
 
-    def __init__(self, name = 'M', F = Frame('', set(), {}, {}), V = {}):
-        super().__init__(name, F.W, F.R, F.arity)
-        self.name = name 
+    def __init__(self, F = Frame(set(), set()), V = None):
+        super().__init__(F.W, F.R)
         self.V = {}
+        if not V == None:
+            for v in V.items(): self.add_to_valuation(v[0], v[1])
 
     def remove_world(self, w):
         super().remove_world(w)
@@ -112,11 +91,8 @@ class Model(Frame):
                 if w in self.V[p]:
                     self.V[p].remove(w)
 
-    def __str__(self):
-        relation_names = ''
-        for r in self.R: relation_names += str(r) + ', '
-        description = self.name + ' = (W, (' + relation_names[:-2:] + '), V)'
-        relations = ''
-        for r in self.R: relations += str(r) + ' = ' + str(self.R[r]) + '\n'
-        return (description + '\n' + 'W = ' + str(self.W) + '\n' + relations + "V = " + str(self.V) + "\n")
+    def __repr__(self)
+        return ('Model(' + 'Frame(' + str(self.W) + ', ' + str(self.R) + ')' + str(self.V) + ')')
 
+    def __str__(self):
+        return 'W = ' + str(self.W) + '\n' + 'R = ' + str(self.R) + '\n' + 'V = ' + str(self.V)
