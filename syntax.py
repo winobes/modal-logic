@@ -108,6 +108,8 @@ def parse_formula(L, formula):
             tableau = [partition[0][0], parse_formula(L, formula[1:])]
         else: 
             raise ValueError("can not partition formula")
+    # One of the partitions should be the main connective. Find it,
+    # add it to the tableau, and parse the remaning subformulas
     else:
         for sub in partition: 
             if (len(sub) == 1 and 
