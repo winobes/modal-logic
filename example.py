@@ -1,5 +1,6 @@
 import structure 
 import syntax
+import semantics
 
 F1 = structure.Frame(set(), set())
 F2 = structure.Frame(set(), set())
@@ -28,7 +29,10 @@ BML = syntax.Language()
 # phi = (◻ p ∧ (◇ r ∨ ¬(r → ◻ q)))
 phi = syntax.parse_formula(BML, "\u25FB p \u2227 (\u25C7 r \u2228 \u00AC(r \u2192 \u25FB q))")
 # psi = (p ∧ q)
-psi = syntax.parse_formula(BML, "p \u2227 q")
+psi = syntax.parse_formula(BML, "p \u2228 r")
 
 print("phi =", phi)
-print("psi =", psi)
+print("psi =", psi, '\n')
+
+print("Evaluate psi at M1,w:", semantics.evaluate(M1, 'w', psi))
+print("Evaluate phi at M1,w:", semantics.evaluate(M1, 'w', psi))

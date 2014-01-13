@@ -60,7 +60,6 @@ def parse_formula(L, formula):
     # Remove whitespace from the formula.
     formula = ''.join(formula.split())
     tableau = []
-    
 
     # If it's atomic, return.
     if len(formula) == 1:
@@ -147,19 +146,3 @@ class logical_constant:
     def __repr__(self):
         return ('logical_constant(' + '"' + str(self.symbol) + '"' + ', '  +
                  str(self.place) + ', ' + str(self.interpretation) + ')')
-
-class modal_operator:
-    """
-    A modal operator has some arity (correspoding to the arity of a
-    relation in a structure), a symbol and optionally a symbol for its
-    dual (if no dual, initialize with None).
-    """
-    
-    def __init__(self, symbol, dual, arity):
-        self.symbol = symbol
-        self.dual = dual
-        self.arity = arity
-
-    def __repr__(self):
-        return ('modal_operator(' + '"' + str(symbol) + '"' +  ', ' + 
-                '"' + str(dual) + '"' + ', ' + str(arity) + ')')
