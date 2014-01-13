@@ -31,7 +31,7 @@ class Frame:
         if len(edge) == 2:
             for w in edge:
                 if not w in self.W:
-                    self.add_world(w)
+                    raise ValueError("edge contains an element not in W")
             self.R.add(tuple(edge))
         else: raise ValueError("wrong arity for that relation")
 
@@ -91,9 +91,28 @@ class Model(Frame):
                 if w in self.V[p]:
                     self.V[p].remove(w)
 
+    def __getitem__(self, p):
+        return self.V.get(p, set()) 
+
     def __repr__(self):
         return ('Model(' + 'Frame(' + str(self.W) + ', ' + str(self.R) + '), ' 
                 + str(self.V) + ')')
 
     def __str__(self):
         return 'W = ' + str(self.W) + '\n' + 'R = ' + str(self.R) + '\n' + 'V = ' + str(self.V)
+
+
+def generate_submodel(M, w):
+    N = Model(Frame({w}, None), None)
+
+    while True:
+        new_worlds = {wv[1] for wv in set().union(*[{(w,v) for v in M.W if (w,v) in M.R} for w in N.W])}
+        if new_worlds <= N.W:
+            break
+        else:
+            N.add_worlds(new_worlds)
+
+    N.add_edges({(w,v) for w in N.W for v in N.W if (w,v) in M.R})
+    N.V = {p:{w for w in M[p] if w in N.W} for p in M.V.keys()}
+
+    return N

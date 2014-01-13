@@ -33,7 +33,7 @@ class Language:
         if brackets == None:
             brackets = default_language[3] 
         self.brackets = brackets
-        
+
     def __repr__(self):
         return ('language' + '(' + str(self.prop) + ', ' +
                 str(self.constants) + ', ' + 

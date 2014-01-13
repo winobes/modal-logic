@@ -24,7 +24,7 @@ def evaluate(M, w, form):
         else:
             return False
 
-    elif form[0] == '\u25fb': # diamond
+    elif form[0] == '\u25fb': # box
         if all([evaluate(M, v, form[1]) for v in M.W if (w,v) in M.R]):
             return True
         else:
@@ -34,7 +34,9 @@ def evaluate(M, w, form):
         return False
 
     else: # assume it's a proposition
-        if w in M.V[form]:
+        if len(form) > 1:
+            raise ValueError("expected a proposition")
+        if w in M[form]:
             return True
         else:
             return False
