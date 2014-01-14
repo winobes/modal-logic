@@ -4,25 +4,30 @@ import semantics
 
 F1 = structure.Frame(set(), set())
 F2 = structure.Frame(set(), set())
+F3 = structure.Frame(set(), set())
 
 F1.add_worlds({'w','u', 'v'})
 F2.add_worlds(set(range(10)))
+F3.add_worlds({n + 1 for n in range(100)})
 
 F1.add_edges({('w', 'v'), ('v', 'v'), ('v', 'w'), ('w', 'u')})
 F2.add_edges({(s,t) for s in F2.W for t in F2.W if s < t})
-
-print(F1, '\n')
-print(F2, '\n')
+F3.add_edges({(s,t) for s in F3.W for t in F3.W if s % t == 0})
 
 V1 = {'p': {'w','v','u'}, 'q': {'w','u'}, 'r': {'v'}}
 V2 = {'p': {s for s in F2.W if s % 2 == 0}, 
       'q': {t for t in F2.W if t % 2 == 1}}
+V3 = {'p': {s for s in F2.W if s % 3 == 0}, 
+      'q': {s for s in F2.W if s % 3 == 1}, 
+      'r': {t for t in F2.W if t % 3 == 2}}
 
 M1 = structure.Model(F1,V1)
 M2 = structure.Model(F2,V2)
+M3 = structure.Model(F3,V3)
 
 print(M1, '\n')
 print(M2, '\n')
+# print(M3, '\n')
 
 # Call syntax.Language with no arguments for basic modal language
 BML = syntax.Language()

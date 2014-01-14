@@ -1,3 +1,5 @@
+import random
+
 class Frame:
     """
     A frame has three parts:
@@ -82,7 +84,7 @@ class Model(Frame):
             self.add_proposition(p)
         for w in worlds: 
             if w not in self.W:
-                self.add_wold(w)
+                self.add_world(w)
             self.V[p].add(w)
 
     def remove_from_valuation(self, p, worlds):
@@ -101,8 +103,25 @@ class Model(Frame):
     def __str__(self):
         return 'W = ' + str(self.W) + '\n' + 'R = ' + str(self.R) + '\n' + 'V = ' + str(self.V)
 
+def generate_random_frame(W, pr):
+    """
+    Generates an Erdos-Reyni random frame from a list of worlds. Each 
+    edge is formed with independent probability (pr).
+    """
+    if pr > 1 or pr < 0:
+        raise ValueError("pr should be a probability between 0 and 1")
+
+    F = Frame(W, None)  
+ 
+    for edge in {(w,v) for w in W for v in W}:
+        if random.uniform(0,1) < pr:
+            F.add_edge(edge)
+    return F 
 
 def generate_submodel(M, w):
+    """
+    Returns a model containing only the worlds reachable from w.
+    """
     N = Model(Frame({w}, None), None)
 
     while True:
