@@ -169,3 +169,17 @@ def generate_smallest_filtration(M, sigma):
     N.R = {(w, v) for w in N.W for v in N.W if any([(u, s) in M.R for u in w
         for s in v])}
     return N
+
+def generate_largest_filtration(M, sigma):
+    """
+    Return the largest filtration of M through sigma, where sigma is assumed to
+    be subformula-closed.
+    """
+    
+    from semantics import evaluate
+
+    N = filtrate(M, sigma)
+    N.R = {(w, v) for w in N.W for v in N.W if all([not evaluate(M, u, f) or
+        evaluate(M, s, ('\u25c7', f)) for u in w for s in v for f in (g for g
+        in sigma if g[0] == '\u25c7')])}
+    return N
