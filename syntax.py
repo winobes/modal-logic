@@ -131,6 +131,30 @@ def tuple_tableau(form):
         print(form)
         raise ValueError("error converting formula list to tuples:") 
 
+def get_subformulas(f):
+    """
+    Return the set of all subformulas of f.
+    """
+
+    subforms = {f}
+    if len(f) > 1:
+        # f has a unary or binary operator: get first operand.
+        subforms = subforms.union(get_subformulas(f[1]))
+    if len(f) == 3:
+        # f has a binary operator: get second operand.
+        subforms = subforms.union(get_subformulas(f[2]))
+    return subforms
+
+def subformula_close(fset):
+    """
+    Close fset under subformulas.
+    """
+
+    closed_fset = set()
+    for f in fset:
+        closed_fset = closed_fset.union(get_subformulas(f))
+    return closed_fset
+
 class logical_constant:
     """
     A logical constant defines is a function from one or more booleans

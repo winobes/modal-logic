@@ -135,3 +135,36 @@ def generate_submodel(M, w):
     N.V = {p:{w for w in M[p] if w in N.W} for p in M.V.keys()}
 
     return N
+
+def filtrate(M, sigma):
+    """
+    Return a model that is a filtration of M through sigma, where sigma is
+    assumed to be subformula-closed. Only the set of worlds and the valuation
+    are constructed. The relation will have to be constructed by
+    generate_smallest_filtration() or generate_largest_filtration().
+    """
+
+    from semantics import evaluate
+
+    N = Model()
+    for w in M.W:
+        v = {u for u in M.W if all([evaluate(M, w, f) == evaluate(M, u, f) for
+        f in sigma])}
+        N.add_world(frozenset(v))
+
+    # Iterate over the atomic propositions in sigma.
+    for p in { f for f in sigma if type(f) == str }:
+        N.add_to_valuation(p, {w for w in N.W if next(iter(w)) in M[p]})
+
+    return N
+
+def generate_smallest_filtration(M, sigma):
+    """
+    Return the smallest filtration of M through sigma, where sigma is assumed
+    to be subformula-closed.
+    """
+
+    N = filtrate(M, sigma)
+    N.R = {(w, v) for w in N.W for v in N.W if any([(u, s) in M.R for u in w
+        for s in v])}
+    return N
