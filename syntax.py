@@ -41,6 +41,9 @@ class Language:
                 str(self.brackets) + ')')
 
 def parse_formula(L, formula):
+    return tuple_tableau(list_tableau(L, formula))
+
+def list_tableau(L, formula):
     """
     Takes a formula as a string and gives it a tableau form for
     easier parsing by other functions (e.g. valuation, satisfaction).
@@ -118,6 +121,15 @@ def parse_formula(L, formula):
                           for form in partition if not form[0] == sub[0]]
 
     return tableau
+
+def tuple_tableau(form):
+    if type(form) == list:
+        return tuple(tuple_tableau(sub) for sub in form)
+    elif type(form) == str or type(form) == tuple:
+        return form
+    else: 
+        print(form)
+        raise ValueError("error converting formula list to tuples:") 
 
 class logical_constant:
     """
