@@ -180,6 +180,6 @@ def generate_largest_filtration(M, sigma):
 
     N = filtrate(M, sigma)
     N.R = {(w, v) for w in N.W for v in N.W if all([not evaluate(M, u, f) or
-        evaluate(M, s, ('\u25c7', f)) for u in w for s in v for f in (g for g
-        in sigma if g[0] == '\u25c7')])}
+        evaluate(M, s, ('diamond', f)) for u in w for s in v for f in (g for g
+        in sigma if g[0] == 'diamond')])}
     return N
