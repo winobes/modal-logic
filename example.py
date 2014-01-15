@@ -1,6 +1,27 @@
 import structure 
 import syntax
 import semantics
+from sys import argv
+
+if  len(argv) > 1 and argv[1] == '-unicode':
+    BML = syntax.Language(*syntax.default_unicode)
+    # str_phi = (◻ p ∧ (◇ r ∨ ¬(r → ◻ q)))
+    str_phi = "\u25FB p \u2227 (\u25C7 r \u2228 \u00AC(r \u2192 \u25FB q))"
+    # psi = (p ∧ q)
+    str_psi = "p \u2228 r"
+else:
+    BML = syntax.Language(*syntax.default_ascii)
+    str_phi = "#p & (@r V ~(r > #q))"
+    str_psi = "p & q"
+
+print(str_phi)
+print(str_psi)
+phi = syntax.parse_formula(BML, str_phi)
+psi = syntax.parse_formula(BML, str_psi)
+
+print("phi =", phi)
+print("psi =", psi, '\n')
+
 
 F1 = structure.Frame(set(), set())
 F2 = structure.Frame(set(), set())
@@ -29,16 +50,6 @@ print(M1, '\n')
 print(M2, '\n')
 # print(M3, '\n')
 
-# Call syntax.Language with no arguments for basic modal language
-BML = syntax.Language()
-
-# phi = (◻ p ∧ (◇ r ∨ ¬(r → ◻ q)))
-phi = syntax.parse_formula(BML, "\u25FB p \u2227 (\u25C7 r \u2228 \u00AC(r \u2192 \u25FB q))")
-# psi = (p ∧ q)
-psi = syntax.parse_formula(BML, "p \u2228 r")
-
-print("phi =", phi)
-print("psi =", psi, '\n')
 
 
 print("Evaluate phi at M1,w:", semantics.evaluate(M1, 'w', phi))

@@ -1,4 +1,3 @@
-import random
 
 class Frame:
     """
@@ -108,13 +107,15 @@ def generate_random_frame(W, pr):
     Generates an Erdos-Reyni random frame from a list of worlds. Each 
     edge is formed with independent probability (pr).
     """
+    from random import uniform
+
     if pr > 1 or pr < 0:
         raise ValueError("pr should be a probability between 0 and 1")
 
     F = Frame(W, None)  
  
     for edge in {(w,v) for w in W for v in W}:
-        if random.uniform(0,1) < pr:
+        if uniform(0,1) < pr:
             F.add_edge(edge)
     return F 
 
@@ -149,7 +150,7 @@ def filtrate(M, sigma):
     N = Model()
     for w in M.W:
         v = {u for u in M.W if all([evaluate(M, w, f) == evaluate(M, u, f) for
-        f in sigma])}
+             f in sigma])}
         N.add_world(frozenset(v))
 
     # Iterate over the atomic propositions in sigma.

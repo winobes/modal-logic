@@ -1,20 +1,28 @@
 import itertools
 
-default_language = [{'p','q','r'},
-                    [{'\u22A5'}, # bottom
-                    {'\u00AC'}, # lnot 
-                    {'\u2227', '\u2228', '\u2192'}], # wedge, vee, arrow
-                    ('\u25C7', '\u25FB'), # diamond, box
+default_unicode =  [{'p','q','r'},
+                    # bottom, not, vee, wedge, arrow
+                    ['\u22A5', '\u00AC', '\u2228', '\u2227', '\u2192'],
+                    # diamond, box
+                    ('\u25C7', '\u25FB'), 
                     {('(',')'), ('[',']'), ('{','}')}
                    ] 
-                            
+ 
+default_ascii =    [{'p','q','r'},
+                    # bottom, not, vee, wedge, arrow
+                    ['F', '~', 'V', '&', '>'],
+                    # diamond, box
+                    ('@', '#'), 
+                    {('(',')'), ('[',']'), ('{','}')}
+                   ] 
+
 
 class Language:
     """
     A basic modal language consists of:
     - a set of propositions (one character strings)
-    - a list of sets of constants (list position is arity) 
-    - a modal operator and it's dual 
+    - a list of constants (list position determines iterpretation) 
+    - a modal operator and it's dual (a pair)
     - a a set of pairs of opening and closing brackets 
     """
     def __init__(self, prop = None, 
@@ -22,17 +30,32 @@ class Language:
                        modality = None, 
                        brackets = None):
         if prop == None:
-            prop = default_language[0]
+            prop = default_ascii[0]
         self.prop = prop
         if constants == None:
-            constants = default_language[1] 
+            constants = default_ascii[1] 
         self.constants = constants
         if modality == None:
-            modality = default_language[2] 
+            modality = default_ascii[2] 
         self.modality = modality
         if brackets == None:
-            brackets = default_language[3] 
+            brackets = default_ascii[3] 
         self.brackets = brackets
+
+
+    def __getitem__(self, symbol):
+
+        parsed_constants = ['bottom', 'not', 'vee', 'wedge', 'arrow']
+        parsed_modalities = ['diamond', 'box']
+
+        if symbol in self.prop:
+            return symbol
+        elif symbol in self.constants:
+            return parsed_constants[self.constants.index(symbol)]
+        elif symbol in self.modality:
+            return parsed_modalities[self.modality.index(symbol)]
+        else:
+            return None 
 
     def __repr__(self):
         return ('language' + '(' + str(self.prop) + ', ' +
@@ -67,7 +90,7 @@ def list_tableau(L, formula):
     # If it's atomic, return.
     if len(formula) == 1:
         if formula in L.prop:
-            return formula
+            return L[formula]
         else: raise ValueError("unexpected character; expected a proposition")
     
     # First partition by subformulas.
@@ -91,12 +114,9 @@ def list_tableau(L, formula):
         # If the bracket stack is empty, propositions and 0-place 
         # logical constants are get theirl lown partitiony.
         # Likewise for constants of arity >2; they deliminate subformulas.
-            if (((len(L.constants)) > 0 and ch in L.constants[0]) or
-               ch in L.prop):
-                i += 1
-                partition.append([])    
-            if (len(L.constants) > 2 and 
-               any(ch in constants for constants in L.constants[2:])):
+            if ((ch == L[0]) or # ch is bottom
+               ch in L.prop or
+               ch in L.constants[2:]): # ch is a 2-place constant
                 i += 1 
                 partition.append([])
     partition = partition[:-1]
@@ -106,8 +126,9 @@ def list_tableau(L, formula):
     if len(partition) == 1:
         if (partition[0][0], partition[0][-1]) in L.brackets:
             tableau = parse_formula(L, formula[1:-1])
-        elif partition[0][0] in L.constants[1] or partition[0][0] in L.modality:
-            tableau = [partition[0][0], parse_formula(L, formula[1:])]
+        elif partition[0][0] == L.constants[1] or partition[0][0] in L.modality:
+        # partition[0][0] is 1-place (not or a modality)
+            tableau = [L[partition[0][0]], parse_formula(L, formula[1:])]
         else: 
             raise ValueError("can not partition formula")
     # One of the partitions should be the main connective. Find it,
@@ -115,8 +136,8 @@ def list_tableau(L, formula):
     else:
         for sub in partition: 
             if (len(sub) == 1 and 
-                sub[0] in {const for const in itertools.chain(*L.constants)}):
-                tableau = [sub[0]] + \
+                sub[0] in {const for const in (L.constants)}):
+                tableau = [L[sub[0]]] + \
                           [parse_formula(L, ''.join(form)) \
                           for form in partition if not form[0] == sub[0]]
 
@@ -154,31 +175,3 @@ def subformula_close(fset):
     for f in fset:
         closed_fset = closed_fset.union(get_subformulas(f))
     return closed_fset
-
-class logical_constant:
-    """
-    A logical constant defines is a function from one or more booleans
-    to a boolean value.
-
-    The symbol may be a unicode character. e.g.:
-    '\u2227' - wedge
-    '\u2228' - vee
-    '\u00AC' - lnot
-    '\u2192' - arrow
-    '\u22A5' - bottom
-
-    The interpretation s ia dictionary from ntuples of boolean
-    values to bolean values. It should give a value to each possible
-    key in the space. e.g.:
-
-    and.interpretation = {(0,0):0, (0,1):0, (1,0):0, (1,1):1}
-    """
-
-    def __init__(self, symbol, n_place, interpretation):
-        self.symbol = symbol 
-        self.place = n_place
-        self.interpretation = interpretation
-
-    def __repr__(self):
-        return ('logical_constant(' + '"' + str(self.symbol) + '"' + ', '  +
-                 str(self.place) + ', ' + str(self.interpretation) + ')')
