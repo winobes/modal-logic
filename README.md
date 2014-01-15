@@ -1,7 +1,7 @@
 Modal Logic
 ===========
 
-We implement a Python class for general Kripke frames with any number of n-ary modal operators and various methods to maniupulate them.
+We implement a Python class for basic Kripke frames and various methods to maniupulate them.
 
 Some goals and todo's
 ---------------------
