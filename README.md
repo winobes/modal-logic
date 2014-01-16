@@ -8,12 +8,13 @@ Some goals and todo's
 + ~~debug make_tableau for one-place constants~~
 + ~~compute formula valuation at a word in a model~~
 + ~~generate submodel~~
-+ filtration (largest, smallest)
++ ~~filtration (largest, smallest)~~
 + compute bisimularity of models/worlds at models
-+ compute satisfaction of a formula by a frame
 + generate cannonical model from a set of formulas
-+ generate random frames
-+ generate random frames for various modal logics (K, S4, S5, D, etc.)
+	- determine consistency of formulas
+	- create atoms from a set of formulas
++ ~~generate random frames~~
+	- ~~Erdos Reyni random frames~~
 + display properties of a frame
 	- transitive
 	- symmetric (asymmetric, anti-symmetric)
@@ -21,8 +22,10 @@ Some goals and todo's
 	- well-founded
 	- tree
 	- non-right branching
++ generate random frames for various modal logics (K, S4, S5, D, etc.)
 + compute modal equivalence
-+ (graphical) drawing of frames
++ User interface
+	- drawing of frames
 
 notes
 -----
