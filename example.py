@@ -42,9 +42,9 @@ V3 = {'p': {s for s in F2.W if s % 3 == 0},
       'q': {s for s in F2.W if s % 3 == 1}, 
       'r': {t for t in F2.W if t % 3 == 2}}
 
-M1 = structure.Model(F1,V1)
-M2 = structure.Model(F2,V2)
-M3 = structure.Model(F3,V3)
+M1 = structure.Model(F1.W, F1.R, V1)
+M2 = structure.Model(F2.W, F2.R, V2)
+M3 = structure.Model(F3.W, F3.R, V3)
 
 print(M1, '\n')
 print(M2, '\n')

@@ -59,8 +59,8 @@ class Model(Frame):
     object, but character strings are the obvious choice.
     """
 
-    def __init__(self, F = Frame(set(), set()), V = None):
-        super().__init__(F.W, F.R)
+    def __init__(self, W = None, R = None, V = None):
+        super().__init__(W, R)
         self.V = {}
         if not V == None:
             for v in V.items(): self.add_to_valuation(v[0], v[1])
@@ -123,7 +123,7 @@ def generate_submodel(M, w):
     """
     Returns a model containing only the worlds reachable from w.
     """
-    N = Model(Frame({w}, None), None)
+    N = Model({w}, None, None)
 
     while True:
         new_worlds = {wv[1] for wv in set().union(*[{(w,v) for v in M.W if (w,v) in M.R} for w in N.W])}
@@ -137,7 +137,7 @@ def generate_submodel(M, w):
 
     return N
 
-def filtrate(M, sigma):
+def _filtrate(M, sigma):
     """
     Return a model that is a filtration of M through sigma, where sigma is
     assumed to be subformula-closed. Only the set of worlds and the valuation
@@ -165,7 +165,7 @@ def generate_smallest_filtration(M, sigma):
     to be subformula-closed.
     """
 
-    N = filtrate(M, sigma)
+    N = _filtrate(M, sigma)
     N.R = {(w, v) for w in N.W for v in N.W if any([(u, s) in M.R for u in w
         for s in v])}
     return N
@@ -178,7 +178,7 @@ def generate_largest_filtration(M, sigma):
     
     from semantics import evaluate
 
-    N = filtrate(M, sigma)
+    N = _filtrate(M, sigma)
     N.R = {(w, v) for w in N.W for v in N.W if all([not evaluate(M, u, f) or
         evaluate(M, s, ('diamond', f)) for u in w for s in v for f in (g for g
         in sigma if g[0] == 'diamond')])}
