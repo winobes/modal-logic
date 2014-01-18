@@ -71,8 +71,6 @@ def construct_formula(atoms, operators):
     Builds a random formula from a list of atoms and operators.
     The order of the lists does not matter. 
     """
-    print("atoms:", atoms)
-    print("operators:", operators)
     for op in operators: 
         if not op in {'not', 'or', 'and', 'arrow'}:
             raise ValueError('unexpected operator')
@@ -89,9 +87,7 @@ def construct_formula(atoms, operators):
             if len(subformulas) == 1:
                 raise ValueError('too many operators')
             formula = (op, pop_random(subformulas), pop_random(subformulas))
-        print("created subformula:", formula)
         subformulas.append(formula)
-        print("subformula list:", subformulas)
 
     if not len(subformulas) == 1:
         raise ValueError('too many atoms')
