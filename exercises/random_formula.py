@@ -28,7 +28,7 @@ def generate_random_formula(n_atoms_range, possible_atoms = None,
     n_atoms = random.randrange(*n_atoms_range)
     # generate list of atoms if none given
     if possible_atoms == None:
-        n_possibles = random.randrange(int(n_atoms/2), n_atoms)
+        n_possibles = random.randrange(int((n_atoms + 1)/2), n_atoms + 1)
         possible_atoms = [(p, 1/min(n_possibles,11)) 
                 for p in ascii_lowercase[15:min(15 + n_possibles, 26)]]
     # generate default operator probability if none given
