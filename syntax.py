@@ -175,3 +175,42 @@ def subformula_close(fset):
     for f in fset:
         closed_fset = closed_fset.union(get_subformulas(f))
     return closed_fset
+
+def formula_to_string(formula):
+    """
+    Convert a formula in list format to a string.
+    """
+
+    if len(formula) == 1:
+        # The formula is atomic.
+        string = formula[0]
+    else:
+        # If the main operator is unary, handle it.
+        if len(formula) == 2:
+            string = '~'
+        else:
+            string = ''
+
+        # Handle the first (and possibly only) operand.
+        if len(formula[1]) < 3:
+            string += formula_to_string(formula[1])
+        else:
+            string += '(' + formula_to_string(formula[1]) + ')'
+
+        # If the main operator is binary, handle the remainder of the formula.
+        if len(formula) == 3:
+            # Handle the binary operator.
+            if formula[0] == 'and':
+                string += ' & '
+            elif formula[0] == 'or':
+                string += ' V '
+            elif formula[0] == 'arrow':
+                string += ' -> '
+
+            # Handle the second operand.
+            if len(formula[2]) < 3:
+                string += formula_to_string(formula[2])
+            else:
+                string += '(' + formula_to_string(formula[2]) + ')'
+
+    return string
