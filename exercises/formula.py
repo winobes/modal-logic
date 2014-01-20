@@ -328,12 +328,3 @@ ops = {
       }
 
 L = Language(ops, None, 'ascii')
-
-phi = Formula(L, "((p&q)->~q)|~(p&F)")
-psi = Formula(L, "p&q")
-chi = Formula(L, "q->(F|r)")
-fm1  = Formula(L, "F")
-fm2  = Formula(L, "p")
-fm3  = Formula(L, "~p")
-fm4  = Formula(L, "~(prop&otherprop)")
-phi.is_atomic()
