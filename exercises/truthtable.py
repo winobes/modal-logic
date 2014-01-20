@@ -1,41 +1,65 @@
+from formula import Formula
+
 class Truthtable:
     """
-    May be initialized with atoms (arg2) and values (arg1)
-    or simply a formula (arg1). If only a formula is supplied,
-    the truth table is calculated from the possible
-    values of its atomic forumlas.
+    t = Truthtable()
+    t.atoms = {prop1, prop2, propq}
+    t.values = [True, False, True, False, False, True, True, True]
+       
+    is a representation of the following truthtable:
+
+      t.atoms | prop1 | prop2 | propq | t.values 
+                False   False   False | True
+                True    False   False | False
+                False   True    False | True
+                True    True    False | False
+                False   False   True  | False
+                True    False   True  | True
+                False   True    True  | True
+                True    True    True  | True
+        
+    Initialization schema:
+        arg1 = values 
+        arg2 = atoms
+   
+        arg1 = Formula
+        arg2 = None
+        (builds the truth table for the given formula)
+
+        arg1 = Operator
+        arg2 = None (or Operator.arity atoms)
+        (builds the truth table for the given operator)
     """
     # TODO: __eq__ method for truth tables
     #       build truth tables from operators
     def __init__(self, arg1 = None, arg2 = None):
-        self.formula = None
         self.atoms = None
         self.values = None
 
         if arg1 == None:
             if not arg2 == None:
-                raise ValueError('...')
+                raise ValueError('needs first argument if seccond is supplied')
         else:
             if arg2 == None:
-                self.formula = arg1
-                self.build(self.formula)
+                if type(arg1) == Formula:
+                    self.atoms = sorted(list(formula.atomics()))
+                    self.values = self.__build_from_formula(arg1)
+                elif type(arg1) == Operator:
+                    
+                else:
+                    raise TypeError('truthtable can be build from Formula or \
+                                     Operator')
             else:
                 self.atoms = arg1
                 self.values = arg2
 
-    def _evaluate(self, formula, valuation):
-        if len(formula) == 1:
-            return valuation[formula]
-        else:
-            return formula[0].truth_function(*[self._evaluate(sub, valuation) for sub in formula[1:]] )
-
-    def build(self, f):
+    def __build_from_formula(self, f):
         import itertools
-
-        self.atoms = sorted(list(f.atomics()))
         valuetable = list(itertools.product([False, True], repeat=len(self.atoms)))
         atomvalues = [ { p:row[self.atoms.index(p)] for p in self.atoms } for row in valuetable ]
-        self.values = [ self._evaluate(f, values) for values in atomvalues ]
+        return [ f.evaluate(values) for values in atomvalues ]
+
+    def 
 
 
 """ 
@@ -47,11 +71,9 @@ from random_formula import generate_random_formula
 
 from formula import L
 
-f = generate_random_formula(L, (2, 4))
+f = Formula(L, "a->b") 
 t = Truthtable(f)
 
 print(f)
 print(t.atoms)
 print(t.values)
-
-

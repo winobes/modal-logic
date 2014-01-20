@@ -19,7 +19,8 @@ def remove_arrows(f):
     elif f[0].arity == 1:
         return build(f[0], remove_arrows(f[1]))
     elif not f[0].ascii_symbol == '->':
-        return build(f[0], remove_arrows(f[1]), remove_arrows(f[2]))
+        return build(f.operator(), remove_arrows(f[1]), 
+                                          remove_arrows(f[2]))
     else:
         return build(lor, build(lnot, remove_arrows(f[1])), remove_arrows(f[2]))
 

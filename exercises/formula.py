@@ -6,7 +6,7 @@ class Operator:
     """
     operator class
         arity (if None, it's any)
-        truth_function() (a function taking 
+        function() (a function taking 
                 a n (arity) arguments and 
                 returning a truth value)
     """
@@ -14,16 +14,16 @@ class Operator:
     # two operators are equal by building a truth table for them
     # and comparing the truth tables
     def __init__(self, ascii_symbol, unicode_symbol, 
-                       truth_function, arity = None):
+                       function, arity = None):
         self.ascii_symbol = ascii_symbol
         self.unicode_symbol = unicode_symbol
         if self.unicode_symbol == None:
             self.unicode_symbol = self.ascii_symbol
-        self.truth_function = truth_function
+        self.function = function
         self.arity = arity 
     
     def __repr__(self):
-        return self.ascii_symbol + '(' + str(self.arity) + ')'
+        return self.ascii_symbol + '<' + str(self.arity) + '>'
 
 class Language:
     """
@@ -48,8 +48,18 @@ class Language:
         if not charset in {'ascii', 'unicode'}:
             raise ValueError("charset must be 'ascii' or 'unicode'.")
         self.charset = charset
+     
 
-    def build_formula(self, operator, *args):
+    def build_formula(self, arg1, *args):
+        if type(arg1) == str:
+            return self.__string_to_formula(arg1)
+        else:
+            return self.__formulas_to_formula(arg1, *args)
+
+    def __string_to_formula(self, string):
+        return Formula(self, string)
+
+    def __formulas_to_formula(self, operator, *args):
         #awaiting operator comparison
         #if not f_tuple[0] in self.operators:
             #raise ValueError('can only build formula with operators from\
@@ -139,18 +149,18 @@ class Language:
             else:
                 raise ValueError("can't partition subformula", f_string)
         else:
-            main_connective = [s[0] for s in partition 
+            operator = [s[0] for s in partition 
                                if len(s) == 1 and s[0] in 
                                {o for o in operators_set if not operator_dict[o].arity == 0}]
-            if len(main_connective) > 1: 
+            if len(operator) > 1: 
                 raise ValueError('more than one main connective', f_string)
-            elif len(main_connective) < 1:
+            elif len(operator) < 1:
                 raise ValueError('subformula has no main connective', f_string)
             else:
-                main_connective = main_connective[0] 
-            form = tuple([operator_dict[main_connective]] +\
+                operator = operator[0] 
+            form = tuple([operator_dict[operator]] +\
                    [self.parse("".join(s)) for s in partition 
-                    if not (len(s) == 1 and s[0] == main_connective)])
+                    if not (len(s) == 1 and s[0] == operator)])
 
         return tuple(form)
 
@@ -178,6 +188,17 @@ class Formula(tuple):
         return {p for p in self.subformulas() if p.depth() == 0 and 
                             p[0] not in self.language.operators}
 
+    def operand(self):
+        """
+        Returns of the formulas connected by the main 
+        connective (retaining the order they appear in
+        the formula).
+        """
+        if self.is_atomic():
+            return None
+        else:
+            return [self[i+1] for i in range(len(self) - 1)]
+
     def subformulas(self):
         subforms = {self} 
         if self.depth() > 0:
@@ -185,15 +206,14 @@ class Formula(tuple):
                 subforms = subforms.union(f.subformulas()) 
         return subforms
 
-    def main_connective(self):
-        if self.depth() == 0:
+    def operator(self):
+        if self.is_atomic():
             return None
         else:
             return self[0]
 
     def is_atomic(self):
-        if (not type(self[0]) == Operator
-           or self[0].arity == 0):
+        if not type(self[0]) == Operator:
             return True
         else:
             return False
@@ -204,6 +224,33 @@ class Formula(tuple):
                 return level - 1
             self = list(itertools.chain.from_iterable(s for s in self 
                         if isinstance(s, tuple) or isinstance(s, Formula)))
+
+
+    def evaluate(self, values):
+        """
+        Expects either a dictionary from atomic formulas to
+        values or a list of values in alphanumeric order
+        with respcet to the atomic formulas' string.
+        """
+        if not type(values) == dict:            
+            alpha_atomics = sorted(self.atomics())
+            if len(values) < len(alpha_atomics):
+                raise ValueError('not enough values for the forumla.',
+                len(value), 'given,', str(self), 'has', len(alpha_atomics),
+                'atomics.')
+            values = {atom:value for (atom,value) in zip(alpha_atomics, values)}
+            print(values) 
+            # build the dictionary
+       
+        if self.is_atomic():
+            return values[self]
+        else:
+            try: 
+                return self.operator().function(
+                    *[f.evaluate(values) for f in self.operand()])
+            except KeyError:
+                raise ValueError('values not given for every atomic in \
+                                  formula:', str(self))
     
     def copy(self):
         return Formula(self.language, self)
@@ -216,42 +263,7 @@ class Formula(tuple):
 
     def __str__(self):
         return _formula_to_string(self, self.language.charset)
-    #def __str__(self):
-        #if len(self) == 1:
-            #if self[0] in self.language.operators:
-                #if self.language.charset == 'unicode':
-                    #return self[0].unicode_symbol
-                #else: # 'ascii'
-                    #return self[0].ascii_symbol
-            #else: 
-                #return str(self[0])
-        #if self[0].arity == 1:
-            #return self.__build_str(self)
-        #else: 
-            #return self.__build_str(self)[1:-1]
-#
-    #def __build_str(self, form):
-        #if form in self.language.operators:
-            #if self.language.charset == 'unicode':
-                #return ' ' + form.unicode_symbol + ' '
-            #else: # 'ascii'
-                #return form.ascii_symbol
-        #elif len(form) == 1:
-            #if form[0] in form.language.operators:
-                #if form.language.charset == 'unicode':
-                    #return form[0].unicode_symbol
-                #else: # 'ascii'
-                    #return form[0].ascii_symbol
-            #else:
-                #return str(form[0])
-        #elif form[0].arity == 1:
-            #return self.__build_str(form[0]) + self.__build_str(form[1])
-        #elif form[0].arity == 2:
-            #return '(' + self.__build_str(form[1]) + self.__build_str(form[0]) + self.__build_str(form[2]) + ')'
-        #else:
-            #return '(' + "".join([self.__build_str(sub) + ',' for sub in form])[:-1] + ')'
-#
-#
+
 
 def _formula_to_string(f, charset):
     """
@@ -272,12 +284,12 @@ def _formula_to_string(f, charset):
 
     if f.is_atomic():
         # The f is atomic.
-        if type(f[0]) == Operator:
-            # the f is a 0-ary operator
-            string = op_to_char[f[0]]
-        else:
-            # the f is an anomic proposotion
-            string = f[0]
+        string = f[0]
+
+    elif f[0].arity == 0:
+        # If the main operator is 0-ary, handle it.
+        string = op_to_char[f[0]]
+
     else:
         # If the main operator is unary, handle it.
         if f[0].arity == 1:
