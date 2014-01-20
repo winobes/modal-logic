@@ -37,9 +37,13 @@ def negation_normal_form(f):
             return negation_normal_form(f[1][1])
         else:
             if f[1].operator == land:
-                return L.build_formula(lor, negation_normal_form(L.build_formula(lnot, f[1][1])), negation_normal_form(L.build_formula(lnot, f[1][2])))
+                return L.build_formula(lor,
+                    negation_normal_form(L.build_formula(lnot, f[1][1])),
+                    negation_normal_form(L.build_formula(lnot, f[1][2])))
             else:
-                # or
-                return L.build_formula(land, negation_normal_form(L.build_formula(lnot, f[1][1])), negation_normal_form(L.build_formula(lnot, f[1][2])))
+                return L.build_formula(land,
+                    negation_normal_form(L.build_formula(lnot, f[1][1])),
+                    negation_normal_form(L.build_formula(lnot, f[1][2])))
     else:
-        return L.build_formula(f.operator(), negation_normal_form(f[1]), negation_normal_form(f[2]))
+        return L.build_formula(f.operator(), negation_normal_form(f[1]),
+            negation_normal_form(f[2]))
