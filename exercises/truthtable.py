@@ -1,4 +1,12 @@
 class Truthtable:
+    """
+    May be initialized with atoms (arg2) and values (arg1)
+    or simply a formula (arg1). If only a formula is supplied,
+    the truth table is calculated from the possible
+    values of its atomic forumlas.
+    """
+    # TODO: __eq__ method for truth tables
+    #       build truth tables from operators
     def __init__(self, arg1 = None, arg2 = None):
         self.formula = None
         self.atoms = None
@@ -17,39 +25,33 @@ class Truthtable:
 
     def _evaluate(self, formula, valuation):
         if len(formula) == 1:
-            return valuation[formula[0]]
-        elif formula[0] == 'not':
-            return not self._evaluate(formula[1], valuation)
-        elif formula[0] == 'and':
-            return self._evaluate(formula[1], valuation) and self._evaluate(formula[2], valuation)
-        elif formula[0] == 'or':
-            return self._evaluate(formula[1], valuation) or self._evaluate(formula[2], valuation)
-        elif formula[0] == 'arrow':
-            return (not self._evaluate(formula[1], valuation)) or self._evaluate(formula[2], valuation)
-
-    def _get_atoms(self, formula):
-        if len(formula) == 1:
-            return set(formula[0])
-        elif len(formula) == 2:
-            return self._get_atoms(formula[1])
+            return valuation[formula]
         else:
-            return self._get_atoms(formula[1]) | self._get_atoms(formula[2])
+            return formula[0].truth_function(*[self._evaluate(sub, valuation) for sub in formula[1:]] )
 
-    def build(self, formula):
+    def build(self, f):
         import itertools
 
-        self.atoms = sorted(list(self._get_atoms(formula)))
+        self.atoms = sorted(list(f.atomics()))
         valuetable = list(itertools.product([False, True], repeat=len(self.atoms)))
         atomvalues = [ { p:row[self.atoms.index(p)] for p in self.atoms } for row in valuetable ]
-        print(atomvalues)
-        self.values = [ self._evaluate(formula, values) for values in atomvalues ]
+        self.values = [ self._evaluate(f, values) for values in atomvalues ]
+
+
+""" 
+TESTING
+"""
 
 import random
 from random_formula import generate_random_formula
 
-f = generate_random_formula((2, 4))
+from formula import L
+
+f = generate_random_formula(L, (2, 4))
 t = Truthtable(f)
 
 print(f)
 print(t.atoms)
 print(t.values)
+
+

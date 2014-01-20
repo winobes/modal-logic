@@ -23,7 +23,7 @@ class Operator:
         self.arity = arity 
     
     def __repr__(self):
-        return self.ascii_symbol
+        return self.ascii_symbol + '(' + str(self.arity) + ')'
 
 class Language:
     """
@@ -54,7 +54,6 @@ class Language:
         #if not f_tuple[0] in self.operators:
             #raise ValueError('can only build formula with operators from\
                               #the build language.')
-        
         try:
             f_tuple = tuple([tuple(sub) for sub in args])
         except:
@@ -73,6 +72,9 @@ class Language:
         any strings not operators are taken
         to be atomic formulas.
         """
+        # remove all whitespace
+        # TODO: this doesn't always work for some reason.
+        ''.join(f_string.split())
         # set of bracket symbols and operator symbols
         # and dictionary from symbol to operator
         brackets_set = {b for b in itertools.chain.from_iterable(self.brackets)}
@@ -189,6 +191,13 @@ class Formula(tuple):
         else:
             return self[0]
 
+    def is_atomic(self):
+        if (not type(self[0]) == Operator
+           or self[0].arity == 0):
+            return True
+        else:
+            return False
+
     def depth(self):
         for level in itertools.count():
             if not self:
@@ -206,40 +215,93 @@ class Formula(tuple):
             return Formula(self.language, tuple.__getitem__(self, i)) 
 
     def __str__(self):
-        if len(self) == 1:
-            if self[0] in self.language.operators:
-                if self.language.charset == 'unicode':
-                    return self[0].unicode_symbol
-                else: # 'ascii'
-                    return self[0].ascii_symbol
-            else: 
-                return str(self[0])
-        if self[0].arity == 1:
-            return self.__build_str(self)
-        else: 
-            return self.__build_str(self)[1:-1]
+        return _formula_to_string(self, self.language.charset)
+    #def __str__(self):
+        #if len(self) == 1:
+            #if self[0] in self.language.operators:
+                #if self.language.charset == 'unicode':
+                    #return self[0].unicode_symbol
+                #else: # 'ascii'
+                    #return self[0].ascii_symbol
+            #else: 
+                #return str(self[0])
+        #if self[0].arity == 1:
+            #return self.__build_str(self)
+        #else: 
+            #return self.__build_str(self)[1:-1]
+#
+    #def __build_str(self, form):
+        #if form in self.language.operators:
+            #if self.language.charset == 'unicode':
+                #return ' ' + form.unicode_symbol + ' '
+            #else: # 'ascii'
+                #return form.ascii_symbol
+        #elif len(form) == 1:
+            #if form[0] in form.language.operators:
+                #if form.language.charset == 'unicode':
+                    #return form[0].unicode_symbol
+                #else: # 'ascii'
+                    #return form[0].ascii_symbol
+            #else:
+                #return str(form[0])
+        #elif form[0].arity == 1:
+            #return self.__build_str(form[0]) + self.__build_str(form[1])
+        #elif form[0].arity == 2:
+            #return '(' + self.__build_str(form[1]) + self.__build_str(form[0]) + self.__build_str(form[2]) + ')'
+        #else:
+            #return '(' + "".join([self.__build_str(sub) + ',' for sub in form])[:-1] + ')'
+#
+#
 
-    def __build_str(self, form):
-        if form in self.language.operators:
-            if self.language.charset == 'unicode':
-                return ' ' + form.unicode_symbol + ' '
-            else: # 'ascii'
-                return form.ascii_symbol
-        elif len(form) == 1:
-            if form[0] in form.language.operators:
-                if form.language.charset == 'unicode':
-                    return form[0].unicode_symbol
-                else: # 'ascii'
-                    return form[0].ascii_symbol
-            else:
-                return str(form[0])
-        elif form[0].arity == 1:
-            return self.__build_str(form[0]) + self.__build_str(form[1])
-        elif form[0].arity == 2:
-            return '(' + self.__build_str(form[1]) + self.__build_str(form[0]) + self.__build_str(form[2]) + ')'
+def _formula_to_string(f, charset):
+    """
+    Convert a f in Formula format to a string.
+    """
+    
+    if charset == 'unicode':
+        op_to_char = {op: op.unicode_symbol  
+                        for op in f.language.operators}
+    elif charset == 'ascii':
+        op_to_char = {op:op.ascii_symbol 
+                        for op in f.language.operators}
+    else:
+        raise ValueError('unsupported charset:', charset)
+    for op in op_to_char.keys():
+        if op.arity == 2:
+            op_to_char[op] = ' ' + op_to_char[op] + ' '
+
+    if f.is_atomic():
+        # The f is atomic.
+        if type(f[0]) == Operator:
+            # the f is a 0-ary operator
+            string = op_to_char[f[0]]
         else:
-            return '(' + "".join([self.__build_str(sub) + ',' for sub in form])[:-1] + ')'
+            # the f is an anomic proposotion
+            string = f[0]
+    else:
+        # If the main operator is unary, handle it.
+        if f[0].arity == 1:
+            string = op_to_char[f[0]]
+        else:
+            string = ''
 
+        # Handle the first (and possibly only) operand.
+        if f[1].is_atomic() or f[1][0].arity < 2:
+            string += _formula_to_string(f[1], charset)
+        else:
+            string += '(' + _formula_to_string(f[1], charset) + ')'
+
+        # If the main operator is binary, handle the remainder of the f.
+        if f[0].arity == 2:
+            # Handle the binary operator.
+            string += op_to_char[f[0]]
+
+            # Handle the second operand.
+            if f[2].is_atomic() or f[2][0].arity < 2:
+                string += _formula_to_string(f[2], charset)
+            else:
+                string += '(' + _formula_to_string(f[2], charset) + ')'
+    return string
 
 """
 TESTING
@@ -262,3 +324,4 @@ fm1  = Formula(L, "F")
 fm2  = Formula(L, "p")
 fm3  = Formula(L, "~p")
 fm4  = Formula(L, "~(prop&otherprop)")
+phi.is_atomic()
