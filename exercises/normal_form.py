@@ -36,14 +36,16 @@ def negation_normal_form(f):
         elif f[1].operator() == lnot:
             return negation_normal_form(f[1][1])
         else:
-            if f[1].operator == land:
+            if f[1].operator() == land:
                 return L.build_formula(lor,
                     negation_normal_form(L.build_formula(lnot, f[1][1])),
                     negation_normal_form(L.build_formula(lnot, f[1][2])))
-            else:
+            elif f[1].operator() == lor:
                 return L.build_formula(land,
                     negation_normal_form(L.build_formula(lnot, f[1][1])),
                     negation_normal_form(L.build_formula(lnot, f[1][2])))
+            else:
+                raise ValueError('unexpected operator:', f[1].operator())
     else:
         return L.build_formula(f.operator(), negation_normal_form(f[1]),
             negation_normal_form(f[2]))
