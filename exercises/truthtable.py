@@ -56,7 +56,7 @@ class Truthtable:
                                         repeat=len(self.atoms)))
             atomvalues = [ {p:row[self.atoms.index(p)] for p in self.atoms } 
                            for row in valuetable ]
-            self.values = [f.evaluate(values) for values in atomvalues]
+            self.values = [formula.evaluate(values) for values in atomvalues]
         else:
             self.atoms = arg1
             self.values = arg2
