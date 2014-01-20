@@ -104,30 +104,3 @@ def pop_random(l):
     if len(l) == 0:
         raise ValueError('list must have at least one element')
     return l.pop(random.randint(0, len(l) - 1))
-
-
-"""
-TESTING
-"""
-
-ops = {
-       Operator('F', '\u22a5', lambda: False, 0),
-       Operator('&', '\u2227', lambda x, y: x and y, 2),
-       Operator('|', '\u2228', lambda x, y: x or  y, 2),
-       Operator('->', '\u2192', lambda x, y: x or  y, 2),
-       Operator('~', '\u00ac', lambda x: not x,      1)
-      }
-
-L = Language(ops, None, 'ascii')
-
-phi = Formula(L, "((p&q)->~q)|~(p&F)")
-psi = Formula(L, "p&q")
-chi = Formula(L, "q->(F|r)")
-fm1  = Formula(L, "F")
-fm2  = Formula(L, "p")
-fm3  = Formula(L, "~p")
-fm4  = Formula(L, "~(prop&otherprop)")
-
-
-f = generate_random_formula(L, (2, 4))
-sigma = [generate_random_formula(L, (4, 6)) for i in range(100)]

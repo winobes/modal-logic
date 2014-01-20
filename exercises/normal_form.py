@@ -42,17 +42,3 @@ def negation_normal_form(f):
                 return ('and', negation_normal_form(('not', f[1][1])), negation_normal_form(('not', f[1][2])))
     else:
         return (f[0], negation_normal_form(f[1]), negation_normal_form(f[2]))
-
-"""
-TESTING
-"""
-
-from random_formula import sigma
-from formula import L
-
-for f in sigma:
-    print(f)
-    print(remove_arrows(f))
-    print()
-
-
