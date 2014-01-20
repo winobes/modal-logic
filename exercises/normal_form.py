@@ -49,3 +49,43 @@ def negation_normal_form(f):
     else:
         return L.build_formula(f.operator(), negation_normal_form(f[1]),
             negation_normal_form(f[2]))
+
+def conjunctive_normal_form(f):
+    f = negation_normal_form(f)
+
+    if f.is_atomic() or f.operator() == lnot:
+        return f
+    elif f.operator() == land:
+        return L.build_formula(land,
+            conjunctive_normal_form(f[1]),
+            conjunctive_normal_form(f[2]))
+    else:
+        # (A and B) or C
+        if f[1].operator() == land:
+            return conjunctive_normal_form(L.build_formula(land,
+                L.build_formula(lor, f[1][1], f[2]),
+                L.build_formula(lor, f[1][2], f[2])))
+        # A or (B and C)
+        elif f[2].operator() == land:
+            return conjunctive_normal_form(L.build_formula(land,
+                L.build_formula(lor, f[1], f[2][1]),
+                L.build_formula(lor, f[1], f[2][2])))
+        else:
+            # TODO: Needs a more elegant solution.
+            f1 = conjunctive_normal_form(f[1])
+            f2 = conjunctive_normal_form(f[2])
+            if f[1] == f1 and f[2] == f2:
+                return L.build_formula(lor, f[1], f[2])
+            else:
+                return conjunctive_normal_form(L.build_formula(lor, f1, f2))
+
+def list_conjuncts(f):
+    """
+    Return a list of the conjuncts of f, where f is assumed to be in
+    conjunctive normal form.
+    """
+
+    if f.operator() == land:
+        return list_conjuncts(f[1]) + list_conjuncts(f[2])
+    else:
+        return [f]
