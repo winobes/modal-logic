@@ -1,4 +1,10 @@
-from formula import Operator, Formula, Language
+from formula import Operator, Formula, L, Language
+
+# TODO change to commented when we have defined a good op __eq__
+arrow = [op for op in L.operators if op.ascii_symbol == '->'][0]
+land = [op for op in L.operators if op.ascii_symbol == '&'][0]
+lor = [op for op in L.operators if op.ascii_symbol == '|'][0]
+lnot = [op for op in L.operators if op.ascii_symbol == '~'][0]
 
 def remove_arrows(f):
     """
@@ -7,12 +13,7 @@ def remove_arrows(f):
     #arrow = Operator('->', '\u2192', lambda x, y: not x or y, 2)
     #lor   = Operator('|', '\u2228', lambda x, y: x or y, 2)
     #lnot  = Operator('~', '\u00ac', lambda x: not x,      1)
-    build = f.language.build_formula
-
-    # TODO change to commented when we have defined a good op __eq__
-    arrow = [op for op in f.language.operators if op.ascii_symbol == '->'][0]
-    lor = [op for op in f.language.operators if op.ascii_symbol == '|'][0]
-    lnot = [op for op in f.language.operators if op.ascii_symbol == '~'][0]
+    build = L.build_formula
 
     if f.depth() == 0:
         return f
@@ -27,18 +28,18 @@ def remove_arrows(f):
 def negation_normal_form(f):
     f = remove_arrows(f)
 
-    if len(f) == 1:
+    if f.is_atomic():
         return f
-    elif len(f) == 2:
-        if len(f[1]) == 1:
+    elif f.operator() == lnot:
+        if f[1].is_atomic():
             return f
-        elif len(f[1]) == 2:
+        elif f[1].operator() == lnot:
             return negation_normal_form(f[1][1])
         else:
-            if f[1][0] == 'and':
-                return ('or', negation_normal_form(('not', f[1][1])), negation_normal_form(('not', f[1][2])))
+            if f[1].operator == land:
+                return L.build_formula(lor, negation_normal_form(L.build_formula(lnot, f[1][1])), negation_normal_form(L.build_formula(lnot, f[1][2])))
             else:
                 # or
-                return ('and', negation_normal_form(('not', f[1][1])), negation_normal_form(('not', f[1][2])))
+                return L.build_formula(land, negation_normal_form(L.build_formula(lnot, f[1][1])), negation_normal_form(L.build_formula(lnot, f[1][2])))
     else:
-        return (f[0], negation_normal_form(f[1]), negation_normal_form(f[2]))
+        return L.build_formula(f.operator(), negation_normal_form(f[1]), negation_normal_form(f[2]))
