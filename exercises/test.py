@@ -1,8 +1,11 @@
 from formula import Formula, Language, Operator
-from normal_form import conjunctive_normal_form, list_conjuncts, negation_normal_form, Truthtable, L
+from propositional_logic import conjunctive_normal_form, list_conjuncts, negation_normal_form, Truthtable, L
+
+phi = L.build('p->q')
+psi = L.build('arrow', phi[1], phi[2])
 
 for i in range(10):
-    f = generate_random_formula(L, (1, 10))
+    f = L.random_formula((1, 10))
     f_nnf = negation_normal_form(f)
     f_cnf = conjunctive_normal_form(f)
     t = Truthtable(f)

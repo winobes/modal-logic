@@ -25,7 +25,7 @@ class Operator:
     def __repr__(self):
         return self.ascii_symbol + '<' + str(self.arity) + '>'
 
-class Language:
+class Language(dict):
     """
     language class
         operators
@@ -34,11 +34,12 @@ class Language:
         parsing function
     """
 
-    def __init__(self, operators, brackets = None, charset = None):
+    def __init__(self, operators_dict, brackets = None, charset = None):
+        super(Language, self).__init__(operators_dict)
         if charset == None:
             charset = 'ascii'
         self.set_charset(charset)
-        self.operators = operators
+        self.operators = operators_dict.values()
         self.brackets = {('(',')'), ('[',']'), ('{','}')}
 
     def set_charset(self, charset):
@@ -52,7 +53,11 @@ class Language:
     def random_formula(self, atoms_range, possible_atoms = None):
         return generate_random_formula(self, atoms_range, possible_atoms)
 
-    def build_formula(self, arg1, *args):
+    def build(self, arg1, *args):
+        # if the first argument is the name of an operator in the language
+        # then turn it into the operator before continuing
+        if arg1 in self.keys():
+            arg1 = self[arg1]
         if type(arg1) == str:
             return self.__string_to_formula(arg1)
         else:
@@ -401,11 +406,11 @@ def construct_formula(language, atoms, operators):
         # matching its arity from the subformula list
         op = pop_random(operators)
         if op.arity == 1:
-            formula = language.build_formula(op, pop_random(subformulas))
+            formula = language.build(op, pop_random(subformulas))
         elif op.arity == 2:
             if len(subformulas) == 1:
                 raise ValueError('too many operators')
-            formula = language.build_formula(op, pop_random(subformulas), 
+            formula = language.build(op, pop_random(subformulas), 
                                                  pop_random(subformulas))
         subformulas.append(formula)
 

@@ -1,83 +1,80 @@
 from formula import Operator, Formula, Language
 import itertools
 
-falsum = Operator('F', '\u22a5', lambda: False, 0)
-land   = Operator('&', '\u2227', lambda x, y: x and y, 2)
-lor    = Operator('|', '\u2228', lambda x, y: x or y, 2)
-arrow  = Operator('->', '\u2192', lambda x, y: not x or y, 2)
-lnot   = Operator('~', '\u00ac', lambda x: not x,      1)
-
-L = Language({falsum, land, lor, arrow, lnot}, None, 'ascii')
+L = Language(
+    {
+    "falsum": Operator('F', '\u22a5', lambda: False, 0),
+    "and"   : Operator('&', '\u2227', lambda x, y: x and y, 2), 
+    "or"    : Operator('|', '\u2228', lambda x, y: x or y, 2),
+    "arrow" : Operator('->', '\u2192', lambda x, y: not x or y, 2),    
+    "not"   : Operator('~', '\u00ac', lambda x: not x,      1)
+    }, None, 'ascii')
 
 def remove_arrows(f):
     """
     Transform implication subformulas into or subformulas.
     """
-    build = L.build_formula
 
     if f.depth() == 0:
         return f
-    elif f[0].arity == 1:
-        return build(f[0], remove_arrows(f[1]))
-    elif not f[0].ascii_symbol == '->':
-        return build(f.operator(), remove_arrows(f[1]), 
-                                          remove_arrows(f[2]))
-    else:
-        return build(lor, build(lnot, remove_arrows(f[1])), remove_arrows(f[2]))
+    elif not f.operator() == L['arrow']:
+        return L.build(f.operator(), *[remove_arrows(f[i+1]) for i in range(len(f)-1) ])
+    else: # remove the arrow
+        return L.build('or', L.build('not', remove_arrows(f[1])), remove_arrows(f[2]))
 
 def negation_normal_form(f):
     f = remove_arrows(f)
 
     if f.is_atomic():
         return f
-    elif f.operator() == lnot:
+    elif f.operator() == L['not']:
         if f[1].is_atomic():
             return f
-        elif f[1].operator() == lnot:
+        elif f[1].operator() == L['not']:
             return negation_normal_form(f[1][1])
         else:
-            if f[1].operator() == land:
-                return L.build_formula(lor,
-                    negation_normal_form(L.build_formula(lnot, f[1][1])),
-                    negation_normal_form(L.build_formula(lnot, f[1][2])))
-            elif f[1].operator() == lor:
-                return L.build_formula(land,
-                    negation_normal_form(L.build_formula(lnot, f[1][1])),
-                    negation_normal_form(L.build_formula(lnot, f[1][2])))
+            if f[1].operator() == L['and']:
+                return L.build('or',
+                    negation_normal_form(L.build('not', f[1][1])),
+                    negation_normal_form(L.build('not', f[1][2])))
+            elif f[1].operator() == L['or']:
+                return L.build('and',
+                    negation_normal_form(L.build('not', f[1][1])),
+                    negation_normal_form(L.build('not', f[1][2])))
             else:
                 raise ValueError('unexpected operator:', f[1].operator())
     else:
-        return L.build_formula(f.operator(), negation_normal_form(f[1]),
+        return L.build(f.operator(), negation_normal_form(f[1]),
             negation_normal_form(f[2]))
 
 def conjunctive_normal_form(f):
     f = negation_normal_form(f)
 
-    if f.is_atomic() or f.operator() == lnot:
+    if f.is_atomic() or f.operator() == L['not']:
         return f
-    elif f.operator() == land:
-        return L.build_formula(land,
+    elif f.operator() == L['and']:
+        return L.build('and',
             conjunctive_normal_form(f[1]),
             conjunctive_normal_form(f[2]))
     else:
         # (A and B) or C
-        if f[1].operator() == land:
-            return conjunctive_normal_form(L.build_formula(land,
-                L.build_formula(lor, f[1][1], f[2]),
-                L.build_formula(lor, f[1][2], f[2])))
+        if f[1].operator() == L['and']:
+            return conjunctive_normal_form(L.build('and',
+                L.build('or', f[1][1], f[2]),
+                L.build('or', f[1][2], f[2])))
         # A or (B and C)
-        elif f[2].operator() == land:
-            return conjunctive_normal_form(L.build_formula(land,
-                L.build_formula(lor, f[1], f[2][1]),
-                L.build_formula(lor, f[1], f[2][2])))
+        elif f[2].operator() == L['and']:
+            return conjunctive_normal_form(L.build('and',
+                L.build('or', f[1], f[2][1]),
+                L.build('or', f[1], f[2][2])))
         else:
             # TODO: Needs a more elegant solution.
             f1 = conjunctive_normal_form(f[1])
             f2 = conjunctive_normal_form(f[2])
             if f[1] == f1 and f[2] == f2:
-                return L.build_formula(lor, f[1], f[2])
+                return L.build('or', f[1], f[2])
             else:
-                return conjunctive_normal_form(L.build_formula(lor, f1, f2))
+                return conjunctive_normal_form(L.build('or', f1, f2))
 
 def list_conjuncts(f):
     """
@@ -85,7 +82,7 @@ def list_conjuncts(f):
     conjunctive normal form.
     """
 
-    if f.operator() == land:
+    if f.operator() == L['and']:
         return list_conjuncts(f[1]) + list_conjuncts(f[2])
     else:
         return [f]
