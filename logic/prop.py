@@ -58,31 +58,19 @@ def random_fml(natoms = (2, 8)):
     while len(fmls) > 1:
         o = get_random_item(operators)
         if o == 'not':
-            f = pop_random_item(fmls)
-            f = ('not', f)
+            fmls.append(('not', pop_random_item(fmls)))
         elif o == 'and':
-            if len(fmls) < 2:
-                continue
-            conjuncts = []
-            nconjuncts = randint(2, int((len(fmls) + 1) / 2) + 1)
-            for i in range(nconjuncts):
-                conjuncts.append(pop_random_item(fmls))
-            f = ('and', conjuncts)
+            nconjuncts = randint(2, int(len(fmls) / 2) + 1)
+            fmls.append(('and',
+                [pop_random_item(fmls) for i in range(nconjuncts)]))
         elif o == 'or':
-            if len(fmls) < 2:
-                continue
-            disjuncts = []
-            ndisjuncts = randint(2, int((len(fmls) + 1) / 2) + 1)
-            for i in range(ndisjuncts):
-                disjuncts.append(pop_random_item(fmls))
-            f = ('or', disjuncts)
+            ndisjuncts = randint(2, int(len(fmls) / 2) + 1)
+            fmls.append(('or',
+                [pop_random_item(fmls) for i in range(ndisjuncts)]))
         elif o == 'arrow':
-            f1 = pop_random_item(fmls)
-            f2 = pop_random_item(fmls)
-            f = ('arrow', f1, f2)
+            fmls.append(('arrow', pop_random_item(fmls), pop_random_item(fmls)))
         else:
             raise ValueError('unexpected operand:', o)
-        fmls.append(f)
 
     return fmls[0]
 
