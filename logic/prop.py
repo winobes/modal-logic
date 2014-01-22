@@ -6,37 +6,31 @@ def fml_to_str(f):
     if atom(f):
         s = f[0]
     elif f[0] == 'not':
-        if len(f[1]) != 3:
-            s = '~' + fml_to_str(f[1])
-        else:
-            s = '~' + '(' + fml_to_str(f[1]) + ')'
+        s = '~' + subfml_to_str(f[1])
     elif f[0] == 'and' or f[0] == 'or':
-        s = '('
+        s = ''
         for i in range(len(f[1])):
-            if len(f[1][i]) != 3:
-                s += fml_to_str(f[1][i])
-            else:
-                s += '(' + fml_to_str(f[1][i]) + ')'
+            s += subfml_to_str(f[1][i])
             if i != len(f[1]) - 1:
                 if f[0] == 'and':
                     s += ' & '
                 else:
                     s += ' V '
-        s += ')'
     elif f[0] == 'arrow':
-        if len(f[1]) != 3:
-            s = fml_to_str(f[1])
-        else:
-            s = '(' + fml_to_str(f[1]) + ')'
-        s += ' -> '
-        if len(f[2]) != 3:
-            s += fml_to_str(f[2])
-        else:
-            s += '(' + fml_to_str(f[2]) + ')'
+        s = subfml_to_str(f[1]) + ' -> ' + subfml_to_str(f[2])
     else:
         raise ValueError('unknown operator:', f[0])
 
     return s
+
+# Helper function for fml_to_str(): enclose a subformula in parentheses if
+# necessary.
+def subfml_to_str(f):
+    if (f[0] == 'and' or f[0] == 'or') and len(f[1]) != 1:
+        return '(' + fml_to_str(f) + ')'
+    if f[0] == 'arrow':
+        return '(' + fml_to_str(f) + ')'
+    return fml_to_str(f)
 
 # Return a random formula.
 def random_fml(natoms = (2, 8)):
