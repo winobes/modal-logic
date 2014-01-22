@@ -41,6 +41,7 @@ def fml_to_str(f):
 # Return a random formula.
 def random_fml(natoms = (2, 8)):
     from random import randint, randrange
+    from util import get_random_item, pop_random_item
 
     if natoms[0] < 1 or natoms[0] >= natoms[1]:
         raise ValueError('invalid range')
@@ -52,12 +53,12 @@ def random_fml(natoms = (2, 8)):
     fmls = []
 
     for i in range(natoms):
-        fmls.append(atoms[randint(0, len(atoms) - 1)])
+        fmls.append(get_random_item(atoms))
 
     while len(fmls) > 1:
-        o = operators[randint(0, len(operators) - 1)]
+        o = get_random_item(operators)
         if o == 'not':
-            f = fmls.pop(randint(0, len(fmls) - 1))
+            f = pop_random_item(fmls)
             f = ('not', f)
         elif o == 'and':
             if len(fmls) < 2:
@@ -65,7 +66,7 @@ def random_fml(natoms = (2, 8)):
             conjuncts = []
             nconjuncts = randint(2, int((len(fmls) + 1) / 2) + 1)
             for i in range(nconjuncts):
-                conjuncts.append(fmls.pop(randint(0, len(fmls) - 1)))
+                conjuncts.append(pop_random_item(fmls))
             f = ('and', conjuncts)
         elif o == 'or':
             if len(fmls) < 2:
@@ -73,11 +74,11 @@ def random_fml(natoms = (2, 8)):
             disjuncts = []
             ndisjuncts = randint(2, int((len(fmls) + 1) / 2) + 1)
             for i in range(ndisjuncts):
-                disjuncts.append(fmls.pop(randint(0, len(fmls) - 1)))
+                disjuncts.append(pop_random_item(fmls))
             f = ('or', disjuncts)
         elif o == 'arrow':
-            f1 = fmls.pop(randint(0, len(fmls) - 1))
-            f2 = fmls.pop(randint(0, len(fmls) - 1))
+            f1 = pop_random_item(fmls)
+            f2 = pop_random_item(fmls)
             f = ('arrow', f1, f2)
         else:
             raise ValueError('unexpected operand:', o)
