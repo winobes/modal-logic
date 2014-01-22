@@ -88,6 +88,6 @@ def random_fml(npreds = (2, 8)):
                 set(get_random_item(variables) for i in range(nvars)),
                 pop_random_item(fmls)))
         else:
-            raise ValueError('unexpected operand: %s' % o)
+            raise ValueError('unexpected operator: %s' % o)
 
     return fmls[0]
