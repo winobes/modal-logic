@@ -70,7 +70,7 @@ def random_fml(natoms = (2, 8)):
         elif o == 'arrow':
             fmls.append(('arrow', pop_random_item(fmls), pop_random_item(fmls)))
         else:
-            raise ValueError('unexpected operand:', o)
+            raise ValueError('unexpected operator:', o)
 
     return fmls[0]
 
