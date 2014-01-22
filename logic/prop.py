@@ -1,0 +1,248 @@
+def atom(f):
+    return len(f) == 1
+
+# Convert a formula to a string.
+def fml_to_str(f):
+    if atom(f):
+        s = f[0]
+    else:
+        if f[0] == 'not':
+            if len(f[1]) != 3:
+                s = '~' + fml_to_str(f[1])
+            else:
+                s = '~' + '(' + fml_to_str(f[1]) + ')'
+        elif f[0] == 'and' or f[0] == 'or':
+            s = '('
+            for i in range(len(f[1])):
+                if len(f[1][i]) != 3:
+                    s += fml_to_str(f[1][i])
+                else:
+                    s += '(' + fml_to_str(f[1][i]) + ')'
+                if i != len(f[1]) - 1:
+                    if f[0] == 'and':
+                        s += ' & '
+                    else:
+                        s += ' V '
+            s += ')'
+        elif f[0] == 'arrow':
+            if len(f[1]) != 3:
+                s = fml_to_str(f[1])
+            else:
+                s = '(' + fml_to_str(f[1]) + ')'
+            s += ' -> '
+            if len(f[2]) != 3:
+                s += fml_to_str(f[2])
+            else:
+                s += '(' + fml_to_str(f[2]) + ')'
+        else:
+            raise ValueError('unknown operator:', f[0])
+
+    return s
+
+# Return a random formula.
+def random_fml(natoms = (2, 8)):
+    from random import randint, randrange
+
+    if natoms[0] < 1 or natoms[0] >= natoms[1]:
+        raise ValueError('invalid range')
+
+    atoms = ('p', 'q', 'r', 's')
+    operators = ('not', 'and', 'or', 'arrow')
+
+    natoms = randrange(*natoms)
+    fmls = []
+
+    for i in range(natoms):
+        fmls.append(atoms[randint(0, len(atoms) - 1)])
+
+    while len(fmls) > 1:
+        o = operators[randint(0, len(operators) - 1)]
+        if o == 'not':
+            f = fmls.pop(randint(0, len(fmls) - 1))
+            f = ('not', f)
+        elif o == 'and':
+            if len(fmls) < 2:
+                continue
+            conjuncts = []
+            nconjuncts = randint(2, int((len(fmls) + 1) / 2) + 1)
+            for i in range(nconjuncts):
+                conjuncts.append(fmls.pop(randint(0, len(fmls) - 1)))
+            f = ('and', conjuncts)
+        elif o == 'or':
+            if len(fmls) < 2:
+                continue
+            disjuncts = []
+            ndisjuncts = randint(2, int((len(fmls) + 1) / 2) + 1)
+            for i in range(ndisjuncts):
+                disjuncts.append(fmls.pop(randint(0, len(fmls) - 1)))
+            f = ('or', disjuncts)
+        elif o == 'arrow':
+            f1 = fmls.pop(randint(0, len(fmls) - 1))
+            f2 = fmls.pop(randint(0, len(fmls) - 1))
+            f = ('arrow', f1, f2)
+        else:
+            raise ValueError('unexpected operand:', o)
+        fmls.append(f)
+
+    return fmls[0]
+
+# Evaluate the formula f. The valuation val is a dictionary from proposition
+# letters to truth values.
+def evaluate(f, val):
+    if atom(f[0]):
+        if not f[0] in val:
+            raise ValueError('atom not in valuation:', f[0])
+        return val[f[0]]
+    if f[0] == 'not':
+        return not evaluate(f[1], val)
+    if f[0] == 'and':
+        return all(evaluate(g, val) for g in f[1])
+    if f[0] == 'or':
+        return any(evaluate(g, val) for g in f[1])
+    if f[0] == 'arrow':
+        return not evaluate(f[1], val) or evaluate(f[2], val)
+    raise ValueError('unknown operator:', f[0])
+
+# Convert each implicative subformula to a disjunctive one.
+def impl_to_disj(f):
+    if atom(f):
+        return f
+    if f[0] == 'not':
+        return ('not', impl_to_disj(f[1]))
+    if f[0] == 'or' or f[0] == 'and':
+        return (f[0], [impl_to_disj(g) for g in f[1]])
+    if f[0] == 'arrow':
+        return ('or', [('not', impl_to_disj(f[1])), impl_to_disj(f[2])])
+    raise ValueError('unknown operator:', f[0])
+
+# Convert to negation normal form.
+def nnf(f):
+    return nnf_do(impl_to_disj(f))
+
+# Helper function for nnf().
+def nnf_do(f):
+    if atom(f):
+        return f
+    elif f[0] == 'not':
+        if atom(f[1]):
+            return f
+        elif f[1][0] == 'not':
+            return nnf_do(f[1][1])
+        elif f[1][0] == 'and':
+            return ('or', [nnf_do(('not', g)) for g in f[1][1]])
+        elif f[1][0] == 'or':
+            return ('and', [nnf_do(('not', g)) for g in f[1][1]])
+        else:
+            raise ValueError('unknown operator:', f[1][0])
+    elif f[0] == 'and' or f[0] == 'or':
+        return (f[0], [nnf_do(g) for g in f[1]])
+    elif f[0] == 'arrow':
+        return ('arrow', nnf_do(f[1]), nnf_do(f[2]))
+    raise ValueError('unknown operator:', f[0])
+
+# Convert to conjunctive normal form.
+def cnf(f):
+    return cnf_remove_dups(remove_double_neg(cnf_flatten(cnf_do(nnf(f)))))
+
+# Helper function for cnf().
+def cnf_do(f):
+    if atom(f) or f[0] == 'not':
+        return f
+    if f[0] == 'and':
+        return ('and', [cnf_do(g) for g in f[1]])
+    if f[0] == 'or':
+        if len(f[1]) == 0:
+            return f
+        if len(f[1]) == 1:
+            return cnf_do(f[1][0])
+        return cnf_distribute(cnf_do(f[1][0]), cnf_do(('or', f[1][1:])))
+    raise ValueError('unknown operator:', f[0])
+
+# Helper function for cnf(): distribute disjunction over conjunction.
+def cnf_distribute(f1, f2):
+    if f1[0] == 'and':
+        if len(f1[1]) == 0:
+            return f1
+        if len(f1[1]) == 1:
+            return cnf_distribute(f1[1][0], f2)
+        return ('and', [cnf_distribute(f1[1][0], f2)] +
+            [cnf_distribute(g, f2) for g in f1[1][1:]])
+    if f2[0] == 'and':
+        if len(f2[1]) == 0:
+            return f2
+        if len(f2[1]) == 1:
+            return cnf_distribute(f1, f2[1][0])
+        return ('and', [cnf_distribute(f1, f2[1][0])] +
+            [cnf_distribute(f1, g) for g in f2[1][1:]])
+    return ('or', [f1, f2])
+
+# Helper function for cnf(): collapse conjunction lists and disjunction lists.
+def cnf_flatten(f):
+    if f[0] == 'and':
+        return ('and', cnf_flatten_conj(f[1]))
+    if f[0] == 'or':
+        return ('or', cnf_flatten_disj(f[1]))
+    return f
+
+# Helper function for cnf_flatten().
+def cnf_flatten_conj(flist):
+    if flist == []:
+        return flist
+    if flist[0][0] == 'and':
+        return cnf_flatten_conj(flist[0][1] + flist[1:])
+    return [cnf_flatten(flist[0])] + cnf_flatten_conj(flist[1:])
+
+# Helper function for cnf_flatten().
+def cnf_flatten_disj(flist):
+    if flist == []:
+        return flist
+    if flist[0][0] == 'or':
+        return cnf_flatten_disj(flist[0][1] + flist[1:])
+    return [flist[0]] + cnf_flatten_disj(flist[1:])
+
+# Helper function for cnf(): remove duplicate disjuncts and conjuncts.
+def cnf_remove_dups(f):
+    if f[0] == 'and':
+        # TODO: Remove duplicates in "and" list.
+        return ('and', [cnf_remove_dups(g) for g in f[1]])
+    if f[0] == 'or':
+        return ('or', list(set(f[1])))
+    return f
+
+# Remove double negations.
+def remove_double_neg(f):
+    if atom(f):
+        return f
+    if f[0] == 'not':
+        if f[1][0] == 'not':
+            return f[1][1]
+        return f
+    if f[0] == 'and' or f[0] == 'or':
+        return (f[0], [remove_double_neg(g) for g in f[1]])
+    if f[0] == 'arrow':
+       return ('arrow', remove_double_neg(f[1]), remove_double_neg(f[2]))
+    raise ValueError('unknown operator:', f[0])
+
+"""
+def remove_dups(f):
+    if atom(f):
+        return f
+    if f[0] == 'not':
+        return ('not', remove_dups(f[1]))
+    if f[0] == 'and' or f[0] == 'or':
+        f[1] = [remove_dups(g) for g in f[1]]
+        i = 0
+        while i < len(f[1]):
+            j = i + 1
+            while j < len(f[1]):
+                if f[i][0] != 'and' and f[i][0] != 'or':
+                    if (f[1][i] == f[1][j])
+                        f[1].remove(f[1][j])
+                else
+                    # ...
+                j += 1
+            i += 1
+    if f[0] == 'arrow':
+        return ('arrow', remove_dups(f[1]), remove_dups(f[2]))
+    raise ValueError('unknown operator:', f[0])
+"""
