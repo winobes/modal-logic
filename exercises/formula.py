@@ -1,7 +1,6 @@
 import itertools
 import re
 
-
 class Operator:
     """
     operator class
@@ -113,11 +112,11 @@ class Language(dict):
 
         if len(f_list) == 1:
             # first check to see if it's actually a 0-ary operator
-            try:
-                return (operator_dict[f_list[0]], )
+            if f_list[0] in operator_dict: 
+                return Formula(f_list[0], self) 
             # otherwise we assume it's a proposition
-            except:
-                return (f_list[0], )
+            else:
+                return (None, f_list[0])
 
         # partition by subformula:
         partition = [[]]
@@ -169,42 +168,67 @@ class Language(dict):
                    [self.parse("".join(s)) for s in partition 
                     if not (len(s) == 1 and s[0] == operator)])
 
-        return tuple(form)
+        return (form[0], tuple(form[1:]))
 
-class Formula(tuple):
+class Formula:
     """
     Formula must be initialized with a language. The language determines
     how a string init_val is parsed. If a tuple is passed as init_val,
     it is not parsed before assignment. Reccomend only using this 
     feature to create a new formula from an old one.
+
+    Formula.operator - Operator
+    Formula.language - Language
+    Formula.operand  - Tuple of Formulas
     """
-   
-    def __new__ (cls, language, init_val):
-        if type(init_val) == str:
-            return super(Formula, cls).__new__(cls, language.parse(init_val))
-        else: # try to convert it to a tuple (e.g. works for list or Formula) 
-            try: return super(Formula, cls).__new__(cls, tuple(init_val))
-            except: 
-                raise TypeError('class Formula does not support initialization \
-                      type', type(init_val), ". Must be either 'str' or 'tuple'.")
 
-    def __init__(self, language, init_val):
-        self.language = language 
-
+    def __init__(self, *args):
+        # initializing with a string to parse
+        if type(args[1]) == str:
+            if len(args) < 2: #or not type(args[0]) == Language:
+                raise ValueError('string to Formula must be initialized with\
+                         a language', type(args[0]), len(args))
+            else:
+                self.language = args[0]
+                parse = self.language.parse(args[1])
+                self.operator = parse[0]
+                self.operand = parse[1]
+        # initializing with an operator and tuple of formulas
+        elif type(args[0]) == Operator:
+            self.operator = args[0]
+            # if operator is a constant, we want a language instead
+            # of a tuple of formulas.
+            if self.operator.arity == 0:
+                if not len(args) == 2:
+                    raise ValueError('0-ary Operators must be\
+                            initialized with a language')
+                    self.language = args[1]
+                    self.operand = None
+            elif not len(args) - 1  == self.operator.arity:
+                raise ValueError('operand number, operator arity mismatch')
+            # otherwise we want the language from one of the formulas (maybe
+            # we should check that they're all the same? Too much performance
+            # overhead?) 
+            else:
+                self.language = args[1].language
+                self.operand = args[1:]
+        elif type(args[0]) == None
+  
+    #def __new__ (cls, language, init_val):
+        #if type(init_val) == str:
+            #return super(Formula, cls).__new__(cls, language.parse(init_val))
+        #else: # try to convert it to a tuple (e.g. works for list or Formula) 
+            #try: return super(Formula, cls).__new__(cls, tuple(init_val))
+            #except: 
+                #raise TypeError('class Formula does not support initialization \
+                      #type', type(init_val), ". Must be either 'str' or 'tuple'.")
+#
+    #def __init__(self, language, init_val):
+        #self.language = language 
+#
     def atomics(self):
         return {p for p in self.subformulas() if p.depth() == 0 and 
                             p[0] not in self.language.operators}
-
-    def operand(self):
-        """
-        Returns of the formulas connected by the main 
-        connective (retaining the order they appear in
-        the formula).
-        """
-        if self.is_atomic():
-            return None
-        else:
-            return [self[i+1] for i in range(len(self) - 1)]
 
     def subformulas(self):
         subforms = {self} 
@@ -212,12 +236,6 @@ class Formula(tuple):
             for f in [self[i+1] for i in range(self[0].arity)]:
                 subforms = subforms.union(f.subformulas()) 
         return subforms
-
-    def operator(self):
-        if self.is_atomic():
-            return None
-        else:
-            return self[0]
 
     def is_atomic(self):
         if not type(self[0]) == Operator:

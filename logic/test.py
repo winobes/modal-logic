@@ -1,5 +1,25 @@
 import prop
 
+f = prop.random_fml((2,5))
+g = prop.random_fml((2,5))
+
+
+print('f:', f)
+print(prop.fml_to_str(f))
+print("contradiction:", prop.is_contr(f))
+print("validity:", prop.is_valid(f))
+print()
+
+print('g:', g)
+print(prop.fml_to_str(g))
+print("contradiction:", prop.is_contr(g))
+print("validity:", prop.is_valid(g))
+print()
+
+print("Equivallent:", prop.are_equiv(f,g))
+
+exit()
+
 def random_bool():
     from random import randrange
     return (True, False)[randrange(0, 2)]

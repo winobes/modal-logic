@@ -223,6 +223,45 @@ def remove_double_neg(f):
        return ('arrow', remove_double_neg(f[1]), remove_double_neg(f[2]))
     raise ValueError('unknown operator:', f[0])
 
+# Returns the set of propositions in f.
+def get_atoms(f):
+    atoms = set() 
+    if atom(f):
+        atoms.add(f[0])
+        return atoms 
+    if f[0] == 'not':
+        return atoms | get_atoms(f[1])
+    if f[0] == 'arrow':
+        return atoms | get_atoms(f[1]) | get_atoms(f[2])
+    if f[0] == 'or' or f[0] == 'and':
+        return atoms.union(*[get_atoms(g) for g in f[1]]) 
+    raise ValueError('unknown operator:', f[0]) 
+
+# Returns True if f evaluates to False for every possible valuation.
+def is_contr(f):
+    atoms = get_atoms(f)
+    truth_table = gen_tt(atoms)
+    return all(not evaluate(f, val) for val in truth_table)
+
+# Returns True if f evaluates to True for every possible valuation.
+def is_valid(f):
+    atoms = get_atoms(f)
+    truth_table = gen_tt(atoms)
+    return all(evaluate(f, val) for val in truth_table)
+
+# Returns True if f and g have the same truth value for every possible valuation.
+def are_equiv(f, g):
+    atoms = get_atoms(f) | get_atoms(g)    
+    truth_table = gen_tt(atoms)
+    return  all(evaluate(f, val) == evaluate(g, val) for val in truth_table)
+
+# Generates all possible valuations for a given set of atoms.     
+def gen_tt(atoms):
+    from itertools import product
+    return [{p:val for (p, val) in zip(atoms, vals)} for vals in 
+         product([False, True], repeat=len(atoms))]
+
+
 """
 def remove_dups(f):
     if atom(f):

@@ -150,3 +150,12 @@ class Truthtable:
     # Assumes that self and other share all the same atomics.    
     # TODO handle the case where they don't
         return self.values == other.values
+
+def look_at_formula(Formula):
+    t = Truthtable(Formula)
+    if all(t.values):
+        print("Tautology")
+    elif any(t.values):
+        print("Satisfiable")
+    else:
+        print("Contradiction")
