@@ -5,37 +5,36 @@ def atom(f):
 def fml_to_str(f):
     if atom(f):
         s = f[0]
-    else:
-        if f[0] == 'not':
-            if len(f[1]) != 3:
-                s = '~' + fml_to_str(f[1])
-            else:
-                s = '~' + '(' + fml_to_str(f[1]) + ')'
-        elif f[0] == 'and' or f[0] == 'or':
-            s = '('
-            for i in range(len(f[1])):
-                if len(f[1][i]) != 3:
-                    s += fml_to_str(f[1][i])
-                else:
-                    s += '(' + fml_to_str(f[1][i]) + ')'
-                if i != len(f[1]) - 1:
-                    if f[0] == 'and':
-                        s += ' & '
-                    else:
-                        s += ' V '
-            s += ')'
-        elif f[0] == 'arrow':
-            if len(f[1]) != 3:
-                s = fml_to_str(f[1])
-            else:
-                s = '(' + fml_to_str(f[1]) + ')'
-            s += ' -> '
-            if len(f[2]) != 3:
-                s += fml_to_str(f[2])
-            else:
-                s += '(' + fml_to_str(f[2]) + ')'
+    elif f[0] == 'not':
+        if len(f[1]) != 3:
+            s = '~' + fml_to_str(f[1])
         else:
-            raise ValueError('unknown operator:', f[0])
+            s = '~' + '(' + fml_to_str(f[1]) + ')'
+    elif f[0] == 'and' or f[0] == 'or':
+        s = '('
+        for i in range(len(f[1])):
+            if len(f[1][i]) != 3:
+                s += fml_to_str(f[1][i])
+            else:
+                s += '(' + fml_to_str(f[1][i]) + ')'
+            if i != len(f[1]) - 1:
+                if f[0] == 'and':
+                    s += ' & '
+                else:
+                    s += ' V '
+        s += ')'
+    elif f[0] == 'arrow':
+        if len(f[1]) != 3:
+            s = fml_to_str(f[1])
+        else:
+            s = '(' + fml_to_str(f[1]) + ')'
+        s += ' -> '
+        if len(f[2]) != 3:
+            s += fml_to_str(f[2])
+        else:
+            s += '(' + fml_to_str(f[2]) + ')'
+    else:
+        raise ValueError('unknown operator:', f[0])
 
     return s
 
