@@ -44,7 +44,7 @@ def subfml_to_str(f):
 
 # Return a random formula.
 def random_fml(npreds = (2, 8)):
-    from random import randint, randrange
+    from random import randrange
     from util import get_random_item, pop_random_item
 
     if npreds[0] < 1 or npreds[0] >= npreds[1]:
@@ -67,23 +67,23 @@ def random_fml(npreds = (2, 8)):
         if o == 'not':
             fmls.append(('not', pop_random_item(fmls)))
         elif o == 'and':
-            nconjuncts = randint(2, int(len(fmls) / 2) + 1)
+            nconjuncts = randrange(2, int(len(fmls) / 2) + 2)
             fmls.append(('and',
                 [pop_random_item(fmls) for i in range(nconjuncts)]))
         elif o == 'or':
-            ndisjuncts = randint(2, int(len(fmls) / 2) + 1)
+            ndisjuncts = randrange(2, int(len(fmls) / 2) + 2)
             fmls.append(('or',
                 [pop_random_item(fmls) for i in range(ndisjuncts)]))
         elif o == 'arrow':
             fmls.append(('arrow', pop_random_item(fmls),
                 pop_random_item(fmls)))
         elif o == 'all':
-            nvars = randint(1, 3)
+            nvars = randrange(1, 4)
             fmls.append(('all',
                 set(get_random_item(variables) for i in range(nvars)),
                 pop_random_item(fmls)))
         elif o == 'exists':
-            nvars = randint(1, 3)
+            nvars = randrange(1, 4)
             fmls.append(('exists',
                 set(get_random_item(variables) for i in range(nvars)),
                 pop_random_item(fmls)))
