@@ -27,6 +27,22 @@ def eval_test():
         #print()
         print(pred.evaluate(fml, asgmnt, intprt, domain))
 
+def eval_test2():
+    domain = {'a', 'b', 'c'}
+    asgmnt = {'x':'a', 'y':'b', 'z':'c'}
+    intprt = {
+        'P':{('a',), ('b',)},
+        'Q':{('a',), ('b',), ('c',)},
+        'R':{('a', 'b'), ('b', 'c'), ('b', 'a')},
+        'S':{('a', 'a'), ('b', 'b'), ('c', 'c')}
+    }
+
+    for i in range(100):
+        f = pred.random_fml((2, 4), {'P':1, 'Q':1, 'R':2, 'S':2})
+        print(pred.fml_to_str(f))
+        print(pred.evaluate(f, asgmnt, intprt, domain))
+        print()
+
 def random_bool():
     from random import randrange
     return (True, False)[randrange(0, 2)]
@@ -61,4 +77,4 @@ def test2():
         print(pred.fml_to_str(f))
         print()
 
-eval_test()
+eval_test2()

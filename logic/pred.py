@@ -43,16 +43,22 @@ def subfml_to_str(f):
     return fml_to_str(f)
 
 # Return a random formula.
-def random_fml(npreds = (2, 8)):
+def random_fml(npreds = (2, 8), arities = {}):
     from random import randrange
     from util import get_random_item, pop_random_item
 
     if npreds[0] < 1 or npreds[0] >= npreds[1]:
         raise ValueError('invalid range')
 
-    preds = tuple([p, randrange(1, 4)] for p in 'PQRS')
+    preds = tuple([p, 0] for p in 'PQRS')
     variables = ('x', 'y', 'z')
     operators = ('not', 'and', 'or', 'arrow', 'all', 'exists')
+
+    for p in preds:
+        if p[0] in arities:
+            p[1] = arities[p[0]]
+        else:
+            p[1] = randrange(1, 4)
 
     npreds = randrange(*npreds)
     fmls = []
