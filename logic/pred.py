@@ -108,7 +108,7 @@ def evaluate(f, asgmnt, intprt, domain):
         return any(evaluate(g, asgmnt, intprt, domain) for g in f[1])
     if f[0] == 'arrow':
         return not evaluate(f[1], asgmnt, intprt, domain) or evaluate(f[2], asgmnt, intprt, domain)
-    if f[0] == 'all' or 'exists' :
+    if f[0] == 'all' or f[0] == 'exists' :
         return eval_all(f, asgmnt, intprt, domain)
     raise ValueError('unknown operator:', f[0])
 
