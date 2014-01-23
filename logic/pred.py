@@ -91,3 +91,59 @@ def random_fml(npreds = (2, 8)):
             raise ValueError('unexpected operator: %s' % o)
 
     return fmls[0]
+
+def parse(fml_str):
+    import re
+
+    ''.join(fml_str.split())
+    re_symbols = {re.escape(s) for s in {'(', ')', '&', '->', 'V', '~'}}
+    re_string =  '(' + ''.join(s + '|' for s in re_symbols)[:]+ 'A[xyz]*' + '|' + 'E[xyz]*' + ')'
+    fml_lst = list(filter(None, re.split(re_string, fml_str)))
+    if len(fml_lst) == 1: 
+    # atomic formula
+        return tuple([fml_lst[0][0], [indv for indv in fml_lst[0][1:]]])
+
+    # partition fml_lst by subformula 
+    partition = [[]] 
+    bracket_stack = []
+    i = 0
+    for s in fml_lst:
+        partition[i].append(s)
+        if s == '(':
+            bracket_stack.append(s)
+        elif s == ')':
+            if not (bracket_stack.pop(), s) == ('(', ')'):
+                raise ValueError('mismatched brakets')
+            if bracket_stack == []:
+                i += 1
+                partition.append([])
+        elif bracket_stack == []:
+            if not (s == '~' or s[0][0] in {'E', 'A'}):
+                i += 1
+                partition.append([])
+    partition = partition[:-1]
+
+    # extra outter brackets
+    if len(partition) == 1 and (partition[0][0], partition[0][-1]) == ('(', ')'):
+        fml = tuple(parse(fml_str[1:-1]))
+    # ~ is main connective
+    elif len(partition) == 1 and partition[0][0] == '~':
+        fml = tuple(['not', parse(fml_str[1:])])
+    elif partition[0][0].startswith('A'):
+        fml = tuple(['all', {x for x in partition[0][0][1:]}, parse("".join(partition[0][1:]))])
+    elif partition[0][0].startswith('E'):
+        fml = tuple(['exists', {x for x in partition[0][0][1:]}, parse("".join(partition[0][1:]))])
+    else: 
+        operator = [s[0] for s in partition if len(s) == 1 and s[0] in
+                        {'&', 'V', '->'}]
+        if not all(operator[0] == o for o in operator):
+            raise ValueError(' more than one main connective', fml_str)
+        elif len(operator) < 1:
+            raise ValueError('subformula has no main connective', fml_str)
+        elif operator[0] == '->':
+            fml = tuple(['arrow', tuple([parse("".join(partition[0])), parse("".join(partition[2]))]) ])
+        elif operator[0] == '&':
+            fml = tuple(['and', [parse("".join(s)) for s in partition if not s == ['&'] ] ])
+        elif operator[0] == 'V':
+            fml = tuple(['or', [parse("".join(s)) for s in partition if not s == ['V'] ] ])
+    return fml 

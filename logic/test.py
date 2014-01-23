@@ -4,6 +4,17 @@ import prop, pred
 # Then we can just call the test function we are interested in and leave the
 # rest untouched.
 
+def print_test():
+    fml_strs = {'(EyPx->Syzz)->Azx~Sxzz',
+              '~(RxVAxQxzzVQyyy)&~ExQxxy',
+               'AxQxzz',
+              'PxV~AxRxy',
+              'AxRxy',
+              'Ax(Pxy&Px&Qyz)'}
+    for fml_str in fml_strs:
+        print(fml_str)
+        print(pred.parse(fml_str),'\n')
+
 def random_bool():
     from random import randrange
     return (True, False)[randrange(0, 2)]
@@ -38,4 +49,4 @@ def test2():
         print(pred.fml_to_str(f))
         print()
 
-test2()
+print_test()
