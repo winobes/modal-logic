@@ -15,6 +15,18 @@ def print_test():
         print(fml_str)
         print(pred.parse(fml_str),'\n')
 
+def eval_test():
+    no_quant = {'AxyPx', 'AxRx', 'Axy(Px->Rxy)', 'Azy(Rxy->Py)'}
+    asgmnt = {'x':'a', 'y':'b', 'z':'c'}
+    intprt = {'P':{('a',),('b',)}, 'R':{('a','b'), ('b','c'), ('b','a')}}
+    domain = {'a', 'b', 'c'}
+    for fml_str in no_quant:
+        fml = pred.parse(fml_str)
+        print(pred.fml_to_str(fml))
+        #print(pred.evaluate(fml, asgmnt, intprt))
+        #print()
+        print(pred.evaluate(fml, asgmnt, intprt, domain))
+
 def random_bool():
     from random import randrange
     return (True, False)[randrange(0, 2)]
@@ -49,4 +61,4 @@ def test2():
         print(pred.fml_to_str(f))
         print()
 
-print_test()
+eval_test()

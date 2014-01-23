@@ -92,6 +92,40 @@ def random_fml(npreds = (2, 8)):
 
     return fmls[0]
 
+# Evaluate the formula f. The assignment is a dictionary from free variables to 
+# elements of the domain, and the interpretation is a dictionary from predicates
+# to a set of n-tuples of elements from the domain where n is the arity of the 
+# predicate.
+# TODO Test for predicate arity errors in assignment
+def evaluate(f, asgmnt, intprt, domain):
+    if pred(f):
+        return tuple(asgmnt[x] for x in f[1]) in intprt[f[0]]
+    if f[0] == 'not':
+        return not evaluate(f[1], asgmnt, intprt, domain)
+    if f[0] == 'and':
+        return all(evaluate(g, asgmnt, intprt, domain) for g in f[1])
+    if f[0] == 'or':
+        return any(evaluate(g, asgmnt, intprt, domain) for g in f[1])
+    if f[0] == 'arrow':
+        return not evaluate(f[1], asgmnt, intprt, domain) or evaluate(f[2], asgmnt, intprt, domain)
+    if f[0] == 'all' or 'exists' :
+        return eval_all(f, asgmnt, intprt, domain)
+    raise ValueError('unknown operator:', f[0])
+
+def eval_all(f, asgmnt, intprt, domain):
+    from itertools import combinations_with_replacement
+    all_asgmnt = [{x:a for (x,a) in zip(f[1], combo)}
+        for combo in combinations_with_replacement(domain, len(f[1]))]
+        # overwrites entries from the assignment when they
+        # appear in d (i.e. for bound variables)
+    if f[0] == 'all':
+        return all(evaluate(f[2], dict(list(asgmnt.items()) + list(d.items())), intprt, domain) for d in all_asgmnt)
+    if f[0] == 'exists':
+        return any(evaluate(f[2], dict(list(asgmnt.items()) + list(d.items())), intprt, domain) for d in all_asgmnt)
+    raise ValueError('unknown operator:', f[0])
+
+
+# takes a well-formatted string and returns a formula
 def parse(fml_str):
     import re
 
@@ -141,7 +175,7 @@ def parse(fml_str):
         elif len(operator) < 1:
             raise ValueError('subformula has no main connective', fml_str)
         elif operator[0] == '->':
-            fml = tuple(['arrow', tuple([parse("".join(partition[0])), parse("".join(partition[2]))]) ])
+            fml = tuple(['arrow', parse("".join(partition[0])), parse("".join(partition[2])) ])
         elif operator[0] == '&':
             fml = tuple(['and', [parse("".join(s)) for s in partition if not s == ['&'] ] ])
         elif operator[0] == 'V':
