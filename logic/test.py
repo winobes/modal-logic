@@ -23,6 +23,11 @@ def prop_prove_test():
     print('|=', prop.fml_to_str(phi))
     return prop.proves(sigma, phi)
 
+def print_tt():
+    sigma = [prop.parse(psi) for psi in
+            {'p -> (qVr)', '(~q&t) V (s->p)', '~(~r -> ~p)'}]
+    print(prop.tt_to_str(*sigma))
+
 def eval_test():
     no_quant = {'AxyPx', 'AxRx', 'Axy(Px->Rxy)', 'Azy(Rxy->Py)'}
     asgmnt = {'x':'a', 'y':'b', 'z':'c'}
@@ -85,4 +90,4 @@ def test2():
         print(pred.fml_to_str(f))
         print()
 
-print(prop_prove_test())
+print_tt()

@@ -121,6 +121,43 @@ def gen_tt(atoms):
     return [{p:val for (p, val) in zip(atoms, vals)} for vals in 
          product([False, True], repeat=len(atoms))]
 
+def tt_to_str(*sigma):
+    tt = gen_tt(set.union(*[get_atoms(phi) for phi in sigma]))
+    atoms = list(tt[0].keys())
+    atoms.sort()
+    string = ''.join([p + '     ' for p in atoms])  + '   '
+    string += ''.join([fml_to_str(phi) + ',   ' for phi in sigma]) + '\n'
+    for row in tt:
+        string += ''.join([str(row[p]) + '  ' if row[p] else str(row[p]) + ' ' for p in atoms]) 
+        string += '   ' + ''.join([str(evaluate(phi, row)) + ' ' * len(fml_to_str(phi)) + ' ' if evaluate(phi, row) else str(evaluate(phi, row)) + ' ' * len(fml_to_str(phi)) for phi in sigma]) + '   \n'  
+    return string
+    
+# Returns True if f evaluates to False for every possible valuation.
+def is_contr(f):
+    atoms = get_atoms(f)
+    truth_table = gen_tt(atoms)
+    return all(not evaluate(f, val) for val in truth_table)
+
+# Returns True if f evaluates to True for every possible valuation.
+def is_valid(f):
+    atoms = get_atoms(f)
+    truth_table = gen_tt(atoms)
+    return all(evaluate(f, val) for val in truth_table)
+
+# Returns True if f and g have the same truth value for every possible valuation.
+def are_equiv(f, g):
+    atoms = get_atoms(f) | get_atoms(g)    
+    truth_table = gen_tt(atoms)
+    return  all(evaluate(f, val) == evaluate(g, val) for val in truth_table)
+
+# Generates all possible valuations for a given set of atoms.     
+def gen_tt(atoms):
+    from itertools import product
+    atoms = list(atoms).sort()
+    return [{p:val for (p, val) in zip(atoms, vals)} for vals in 
+         product([False, True], repeat=len(atoms))]
+
+
 # Convert each implicative subformula to a disjunctive one.
 def impl_to_disj(f):
     if atom(f):
