@@ -85,6 +85,42 @@ def evaluate(f, val):
         return not evaluate(f[1], val) or evaluate(f[2], val)
     raise ValueError('unknown operator:', f[0])
 
+# Returns True if f evaluates to False for every possible valuation.
+def is_contr(f):
+    atoms = get_atoms(f)
+    truth_table = gen_tt(atoms)
+    return all(not evaluate(f, val) for val in truth_table)
+
+# Returns True if f evaluates to True for every possible valuation.
+def is_valid(f):
+    atoms = get_atoms(f)
+    truth_table = gen_tt(atoms)
+    return all(evaluate(f, val) for val in truth_table)
+
+# Returns True if f and g have the same truth value 
+# for every possible valuation.
+def are_equiv(f, g):
+    atoms = get_atoms(f) | get_atoms(g)    
+    truth_table = gen_tt(atoms)
+    return  all(evaluate(f, val) == evaluate(g, val))
+
+# Returns the strongest implication of a set of premices; that is, the thing
+# that is true only at the rows in the truth table where all the premices are 
+# true.
+def strngst_impcl(sigma):
+    atoms = set.union(*[get_atoms(f) for f in sigma])
+    rows = [t for t in gen_tt(atoms) if 
+            all(evaluate(f, t) for f in sigma)]
+    phi = tuple(['or', [ tuple(['and', [p if row[p] == True else ('not', p) 
+                for p in row] ]) for row in rows ] ])
+    return phi
+
+# Generates all possible valuations for a given set of atoms.     
+def gen_tt(atoms):
+    from itertools import product
+    return [{p:val for (p, val) in zip(atoms, vals)} for vals in 
+         product([False, True], repeat=len(atoms))]
+
 # Convert each implicative subformula to a disjunctive one.
 def impl_to_disj(f):
     if atom(f):
@@ -231,6 +267,14 @@ def is_valid(f):
     truth_table = gen_tt(atoms)
     return all(evaluate(f, val) for val in truth_table)
 
+# Returns True if phi is true at every line in the truth table where all
+# the formulas in sigma are true.
+def proves(sigma, phi):
+    atoms = set.union(*[get_atoms(psi) for psi in sigma]) | get_atoms(phi)
+    all_sigma_tt = [row for row in gen_tt(atoms) if 
+        all(evaluate(psi, row) for psi in sigma)]
+    return all(evaluate(phi, row) for row in all_sigma_tt)
+
 # Returns True if f and g have the same truth value for every possible valuation.
 def are_equiv(f, g):
     atoms = get_atoms(f) | get_atoms(g)    
@@ -246,8 +290,7 @@ def gen_tt(atoms):
 # Converts well-formatted strings into formulas
 def parse(fml_str):
     import re
-
-    ''.join(fml_str.split())
+    fml_str = ''.join(fml_str.split())
     re_symbols = {re.escape(s) for s in {'(', ')', '&', '->', 'V', '~'}}
     re_string =  '(' + ''.join(s + '|' for s in re_symbols)[:] + ')'
     fml_lst = list(filter(None, re.split(re_string, fml_str)))
@@ -289,7 +332,7 @@ def parse(fml_str):
         elif len(operator) < 1:
             raise ValueError('subformula has no main connective', fml_str)
         elif operator[0] == '->':
-            fml = tuple(['arrow', tuple([parse("".join(partition[0])), parse("".join(partition[2]))]) ])
+            fml = tuple(['arrow', parse("".join(partition[0])), parse("".join(partition[2])) ])
         elif operator[0] == '&':
             fml = tuple(['and', [parse("".join(s)) for s in partition if not s == ['&'] ] ])
         elif operator[0] == 'V':
