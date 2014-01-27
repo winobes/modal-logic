@@ -88,17 +88,33 @@ def eval_test():
         print(pred.evaluate(fml, asgmnt, intprt, domain))
 
 def eval_test2():
-    domain = {'a', 'b', 'c'}
-    asgmnt = {'x':'a', 'y':'b', 'z':'c'}
+    domain = {0, 1, 2}
+    asgmnt = {'x':0, 'y':1, 'z':2}
     intprt = {
-        'P':{('a',), ('b',)},
-        'Q':{('a',), ('b',), ('c',)},
-        'R':{('a', 'b'), ('b', 'c'), ('b', 'a')},
-        'S':{('a', 'a'), ('b', 'b'), ('c', 'c')}
+        'P':{(0,), (1,)},
+        'Q':{(0,), (1,), (2,)},
+        'R':{(0, 1), (1, 2), (2, 0)},
+        'S':{(0, 0), (1, 1), (2, 2)},
+        'a':0,
+        'b':1,
+        'c':2,
+        'f':{(i,):0 for i in domain},
+        'g':{(i,):i for i in domain},
+        'h':{(i, j):i for i in domain for j in domain},
+        'j':{(i, j):j for i in domain for j in domain}
     }
 
+    arities = {'P':1, 'Q':1, 'R':2, 'S':2, 'f':1, 'g':1, 'h':2, 'j':2}
+
+    print('domain:', domain)
+    print('assignment:', asgmnt)
+    print('interpretation:')
+    for i in intprt:
+        print('%s: %s' % (i, intprt[i]))
+    print()
+
     for i in range(100):
-        f = pred.random_fml((2, 4), {'P':1, 'Q':1, 'R':2, 'S':2})
+        f = pred.random_fml((2, 4), arities)
         print(pred.fml_to_str(f))
         print(pred.evaluate(f, asgmnt, intprt, domain))
         print()
@@ -137,4 +153,4 @@ def test2():
         print(pred.fml_to_str(f))
         print()
 
-model_checking()
+eval_test2()

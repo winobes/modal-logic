@@ -1,12 +1,19 @@
 def pred(f):
     return f[0] in 'PQRS'
 
+def constant(x):
+    return isinstance(x, str) and x in 'abc'
+
+def variable(x):
+    return isinstance(x, str) and x in 'xyz'
+
+def function(x):
+    return isinstance(x, tuple) and x[0] in 'fghj'
+
 # Convert a formula to a string.
 def fml_to_str(f):
     if pred(f):
-        s = f[0]
-        for t in f[1]:
-            s += t
+        s = f[0] + args_to_str(f[1])
     elif f[0] == 'not':
         s = '~' + subfml_to_str(f[1])
     elif f[0] == 'and' or f[0] == 'or':
@@ -14,17 +21,11 @@ def fml_to_str(f):
         for i in range(len(f[1])):
             s += subfml_to_str(f[1][i])
             if i != len(f[1]) - 1:
-                if f[0] == 'and':
-                    s += ' & '
-                else:
-                    s += ' V '
+                s += ' & ' if f[0] == 'and' else ' V '
     elif f[0] == 'arrow':
         s = subfml_to_str(f[1]) + ' -> ' + subfml_to_str(f[2])
     elif f[0] == 'all' or f[0] == 'exists':
-        if f[0] == 'all':
-            s = 'A'
-        else:
-            s = 'E'
+        s = 'A' if f[0] == 'all' else 'E'
         for t in f[1]:
             s += t
         s += subfml_to_str(f[2])
@@ -42,6 +43,17 @@ def subfml_to_str(f):
         return '(' + fml_to_str(f) + ')'
     return fml_to_str(f)
 
+# Helper function for fml_to_str(): convert a list of predicate or function
+# arguments to a string.
+def args_to_str(a):
+    s = '('
+    for i in range(len(a)):
+        s += a[i][0] + args_to_str(a[i][1]) if function(a[i]) else str(a[i])
+        if i != len(a) - 1:
+            s += ', '
+    s += ')'
+    return s
+
 # Return a random formula.
 def random_fml(npreds = (2, 8), arities = {}):
     from random import randrange
@@ -51,22 +63,34 @@ def random_fml(npreds = (2, 8), arities = {}):
         raise ValueError('invalid range')
 
     preds = tuple([p, 0] for p in 'PQRS')
+    constants = ('a', 'b', 'c')
     variables = ('x', 'y', 'z')
+    functions = tuple([f, 0] for f in 'fghj')
     operators = ('not', 'and', 'or', 'arrow', 'all', 'exists')
 
     for p in preds:
-        if p[0] in arities:
-            p[1] = arities[p[0]]
-        else:
-            p[1] = randrange(1, 4)
+        p[1] = arities[p[0]] if p[0] in arities else randrange(1, 4)
+
+    for f in functions:
+        f[1] = arities[f[0]] if f[0] in arities else randrange(1, 2)
 
     npreds = randrange(*npreds)
     fmls = []
 
     for i in range(npreds):
-        p = get_random_item(preds)
-        fmls.append((p[0],
-            list(get_random_item(variables) for i in range(p[1]))))
+        pred = get_random_item(preds)
+        args = []
+        for i in range(pred[1]):
+            choice = randrange(0, 3)
+            if choice == 0:
+                args.append(get_random_item(constants))
+            elif choice == 1:
+                args.append(get_random_item(variables))
+            else:
+                func = get_random_item(functions)
+                args.append((func[0],
+                    list(get_random_item(variables) for i in range(func[1]))))
+            fmls.append((pred[0], args))
 
     while len(fmls) > 1:
         o = get_random_item(operators)
@@ -105,7 +129,8 @@ def random_fml(npreds = (2, 8), arities = {}):
 # TODO Test for predicate arity errors in assignment
 def evaluate(f, asgmnt, intprt, domain):
     if pred(f):
-        return tuple(asgmnt[x] for x in f[1]) in intprt[f[0]]
+        return tuple(interpret_args(list(f[1]), asgmnt, intprt)) in \
+            intprt[f[0]]
     if f[0] == 'not':
         return not evaluate(f[1], asgmnt, intprt, domain)
     if f[0] == 'and':
@@ -130,8 +155,7 @@ def eval_bound(f, asgmnt, intprt, domain):
         return any(evaluate(f[2], dict(list(asgmnt.items()) + list(d.items())), intprt, domain) for d in all_asgmnt)
     raise ValueError('unknown operator:', f[0])
 
-# Returns a list of tuples, the first item is the predicate symbol, the 
-# second being its arity.
+# Returns a dictionary from predicates to their arities
 def get_preds(f):
     preds = {} 
     if pred(f):
@@ -169,6 +193,19 @@ def check_models(f, n, k):
                 return intprt
     return None
         
+# Helper function for evaluate(): interpret the arguments of a predicate or
+# function symbol.
+def interpret_args(args, asgmnt, intprt):
+    for i in range(len(args)):
+        if constant(args[i]):
+            args[i] = intprt[args[i]]
+        elif function(args[i]):
+            funcsymbol = args[i][0]
+            funcargs = interpret_args(args[i][1], asgmnt, intprt)
+            args[i] = intprt[funcsymbol][tuple(funcargs)]
+        elif variable(args[i]):
+            args[i] = asgmnt[args[i]]
+    return args
 
 # takes a well-formatted string and returns a formula
 def parse(fml_str):
