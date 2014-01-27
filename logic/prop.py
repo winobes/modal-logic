@@ -121,15 +121,19 @@ def gen_tt(atoms):
     return [{p:val for (p, val) in zip(atoms, vals)} for vals in 
          product([False, True], repeat=len(atoms))]
 
-def tt_to_str(*sigma):
-    tt = gen_tt(set.union(*[get_atoms(phi) for phi in sigma]))
+# Given a set of formulas, pretty prints a truth table showing the
+# value of each formula in sigma for each row in tt (if tt == None,
+# prints all possible rows WRT the atoms in sigma.
+def tt_to_str(tt, *sigma):
+    if tt == None: 
+        tt = gen_tt(set.union(*[get_atoms(phi) for phi in sigma]))
     atoms = list(tt[0].keys())
     atoms.sort()
     string = ''.join([p + '     ' for p in atoms])  + '   '
     string += ''.join([fml_to_str(phi) + ',   ' for phi in sigma]) + '\n'
     for row in tt:
         string += ''.join([str(row[p]) + '  ' if row[p] else str(row[p]) + ' ' for p in atoms]) 
-        string += '   ' + ''.join([str(evaluate(phi, row)) + ' ' * len(fml_to_str(phi)) + ' ' if evaluate(phi, row) else str(evaluate(phi, row)) + ' ' * len(fml_to_str(phi)) for phi in sigma]) + '   \n'  
+        string += '   ' + ''.join([str(evaluate(phi, row)) + ' ' * (len(fml_to_str(phi)) - 1) + ' ' if evaluate(phi, row) else str(evaluate(phi, row)) + ' ' * (len(fml_to_str(phi)) - 1) for phi in sigma])  + '   \n'  
     return string
     
 # Returns True if f evaluates to False for every possible valuation.
@@ -277,6 +281,18 @@ def remove_double_neg(f):
     if f[0] == 'arrow':
        return ('arrow', remove_double_neg(f[1]), remove_double_neg(f[2]))
     raise ValueError('unknown operator:', f[0])
+
+# Uses the truth table method to compute disjunctive normal form
+def dnf_tt(f):
+    f_true_tt = [row for row in gen_tt(get_atoms(f)) 
+                 if evaluate(f, row) == True]
+    return tuple(['or', [tuple(['and', [p if row[p] else tuple(['not', p]) for p in row.keys() ]]) for row in f_true_tt] ])
+
+# Uses the truth table method to compute conjunctive normal form
+def cnf_tt(f):
+    f_false_tt = [row for row in gen_tt(get_atoms(f)) 
+                 if evaluate(f, row) == False]
+    return tuple(['and', [tuple(['or', [p if not row[p] else tuple(['not', p]) for p in row.keys() ]]) for row in f_false_tt] ])
 
 # Returns the set of propositions in f.
 def get_atoms(f):

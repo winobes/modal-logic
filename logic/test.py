@@ -4,6 +4,40 @@ import prop, pred
 # Then we can just call the test function we are interested in and leave the
 # rest untouched.
 
+def cnf_testing():
+    # CNF is faster than CNF_TT for random formulas of 13 or fewer atoms.
+    # CNF reaches default maximum recursion depth (1000) at 25 atoms  
+    # for formulas in DNF, the truth table method is faster starting at
+    # 3 atoms.
+    import time
+    sigma = [prop.random_fml((15,16)) for i in range(1000)]
+    sigma_dnf = [prop.dnf_tt(phi) for phi in sigma]
+
+    start = time.time()
+    for phi in sigma:
+        g = prop.cnf(phi)
+    end = time.time()
+    print('Random to CNF   Time:', end - start)
+
+    start = time.time()
+    for phi in sigma:
+        g = prop.cnf_tt(phi)
+    end = time.time()
+    print('Random to CNF_TT Time:', end - start)
+
+    start = time.time()
+    for phi in sigma_dnf:
+        g = prop.cnf(phi)
+    end = time.time()
+    print('DNF to CNF   Time:', end - start)
+
+    start = time.time()
+    for phi in sigma_dnf:
+        g = prop.cnf_tt(phi)
+    end = time.time()
+    print('DNF to CNF_TT Time:', end - start)
+
+
 def print_test():
     fml_strs = {'(EyPx->Syzz)->Azx~Sxzz',
               '~(RxVAxQxzzVQyyy)&~ExQxxy',
@@ -22,11 +56,6 @@ def prop_prove_test():
     for psi in sigma: print("  ",prop.fml_to_str(psi))
     print('|=', prop.fml_to_str(phi))
     return prop.proves(sigma, phi)
-
-def print_tt():
-    sigma = [prop.parse(psi) for psi in
-            {'p -> (qVr)', '(~q&t) V (s->p)', '~(~r -> ~p)'}]
-    print(prop.tt_to_str(*sigma))
 
 def eval_test():
     no_quant = {'AxyPx', 'AxRx', 'Axy(Px->Rxy)', 'Azy(Rxy->Py)'}
@@ -90,4 +119,4 @@ def test2():
         print(pred.fml_to_str(f))
         print()
 
-print_tt()
+cnf_testing()
