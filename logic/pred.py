@@ -21,17 +21,11 @@ def fml_to_str(f):
         for i in range(len(f[1])):
             s += subfml_to_str(f[1][i])
             if i != len(f[1]) - 1:
-                if f[0] == 'and':
-                    s += ' & '
-                else:
-                    s += ' V '
+                s += ' & ' if f[0] == 'and' else ' V '
     elif f[0] == 'arrow':
         s = subfml_to_str(f[1]) + ' -> ' + subfml_to_str(f[2])
     elif f[0] == 'all' or f[0] == 'exists':
-        if f[0] == 'all':
-            s = 'A'
-        else:
-            s = 'E'
+        s = 'A' if f[0] == 'all' else 'E'
         for t in f[1]:
             s += t
         s += subfml_to_str(f[2])
@@ -54,10 +48,7 @@ def subfml_to_str(f):
 def args_to_str(a):
     s = '('
     for i in range(len(a)):
-        if function(a[i]):
-            s += a[i][0] + args_to_str(a[i][1])
-        else:
-            s += str(a[i])
+        s += a[i][0] + args_to_str(a[i][1]) if function(a[i]) else str(a[i])
         if i != len(a) - 1:
             s += ', '
     s += ')'
@@ -78,16 +69,10 @@ def random_fml(npreds = (2, 8), arities = {}):
     operators = ('not', 'and', 'or', 'arrow', 'all', 'exists')
 
     for p in preds:
-        if p[0] in arities:
-            p[1] = arities[p[0]]
-        else:
-            p[1] = randrange(1, 4)
+        p[1] = arities[p[0]] if p[0] in arities else randrange(1, 4)
 
     for f in functions:
-        if f[0] in arities:
-            f[1] = arities[f[0]]
-        else:
-            f[1] = randrange(1, 2)
+        f[1] = arities[f[0]] if f[0] in arities else randrange(1, 2)
 
     npreds = randrange(*npreds)
     fmls = []
