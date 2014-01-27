@@ -4,6 +4,24 @@ import prop, pred
 # Then we can just call the test function we are interested in and leave the
 # rest untouched.
 
+def model_checking():
+    fml_strs = [
+                '~ExPx->Ax~Px',
+                'Ax~Px->~ExPx',
+                '~AxPx->Ex~Px',
+                'Ex~Px->~AxPx',
+                'Ax(Px&Qx)->(AxPx&AxQx)',
+                '(Ax(Px->Qx)&ExPx)->ExQx'
+                '(~Ex((Sx&Qx)&Px) & Ax(Sx->Qx) & Ax(Qx->Px)) -> ~ExSx'
+                ]
+              
+    sigma = [pred.parse(phi) for phi in fml_strs]
+    for phi in sigma:
+        print(pred.fml_to_str(phi))
+        print("Found countermodel:", pred.check_models(phi, 100, 10000))
+        print() 
+
+
 def cnf_testing():
     # CNF is faster than CNF_TT for random formulas of 13 or fewer atoms.
     # CNF reaches default maximum recursion depth (1000) at 25 atoms  
@@ -119,4 +137,4 @@ def test2():
         print(pred.fml_to_str(f))
         print()
 
-cnf_testing()
+model_checking()

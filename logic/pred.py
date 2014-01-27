@@ -115,27 +115,66 @@ def evaluate(f, asgmnt, intprt, domain):
     if f[0] == 'arrow':
         return not evaluate(f[1], asgmnt, intprt, domain) or evaluate(f[2], asgmnt, intprt, domain)
     if f[0] == 'all' or f[0] == 'exists' :
-        return eval_all(f, asgmnt, intprt, domain)
+        return eval_bound(f, asgmnt, intprt, domain)
     raise ValueError('unknown operator:', f[0])
 
-def eval_all(f, asgmnt, intprt, domain):
+# Helper function for evaluate. 
+def eval_bound(f, asgmnt, intprt, domain):
     from itertools import combinations_with_replacement
     all_asgmnt = [{x:a for (x,a) in zip(f[1], combo)}
         for combo in combinations_with_replacement(domain, len(f[1]))]
-        # overwrites entries from the assignment when they
-        # appear in d (i.e. for bound variables)
     if f[0] == 'all':
         return all(evaluate(f[2], dict(list(asgmnt.items()) + list(d.items())), intprt, domain) for d in all_asgmnt)
+        # d overwrites the assignment for bound variables 
     if f[0] == 'exists':
         return any(evaluate(f[2], dict(list(asgmnt.items()) + list(d.items())), intprt, domain) for d in all_asgmnt)
     raise ValueError('unknown operator:', f[0])
 
+# Returns a list of tuples, the first item is the predicate symbol, the 
+# second being its arity.
+def get_preds(f):
+    preds = {} 
+    if pred(f):
+        if f[0] in preds: 
+            raise ValueError('Conflicting arities for predicate: %s' % f[0])
+        preds[f[0]] = len(f[1])
+    if f[0] == 'not':
+        preds.update(get_preds(f[1]))
+    if f[0] == 'and' or f[0] == 'or':
+        for g in f[1]: preds.update(get_preds(g))
+    if f[0] == 'arrow':
+        preds.update(get_preds(f[1]))
+        preds.update(get_preds(f[2]))
+    if f[0] == 'all' or f[0] == 'exists' :
+        preds.update(get_preds(f[2]))
+    return preds
+
+# Checks the validity of f on k models of size n. Returns the first countermodel
+# found. If no countermodel of size n is found, returns None.
+def check_models(f, n, k):
+    from itertools import combinations, combinations_with_replacement
+    from random import randint, sample
+    domain = {str(i) for i in range(n)}
+    preds = get_preds(f)
+    combos = {p:{combo for combo in combinations_with_replacement(domain, preds[p])} for p in preds}
+    hash_list = []
+    checked = 0
+    while checked < k:
+        intprt = {p:frozenset(sample(combos[p], randint(0, len(combos[p])))) for p in preds}
+        model_hash = hash(frozenset(intprt.items()))
+        if not model_hash in hash_list:
+            hash_list.append(model_hash)
+            checked += 1
+            if not evaluate(f, {}, intprt, domain):
+                return intprt
+    return None
+        
 
 # takes a well-formatted string and returns a formula
 def parse(fml_str):
     import re
 
-    ''.join(fml_str.split())
+    fml_str = ''.join(fml_str.split())
     re_symbols = {re.escape(s) for s in {'(', ')', '&', '->', 'V', '~'}}
     re_string =  '(' + ''.join(s + '|' for s in re_symbols)[:]+ 'A[xyz]*' + '|' + 'E[xyz]*' + ')'
     fml_lst = list(filter(None, re.split(re_string, fml_str)))
@@ -162,17 +201,18 @@ def parse(fml_str):
                 i += 1
                 partition.append([])
     partition = partition[:-1]
-
-    # extra outter brackets
-    if len(partition) == 1 and (partition[0][0], partition[0][-1]) == ('(', ')'):
-        fml = tuple(parse(fml_str[1:-1]))
-    # ~ is main connective
-    elif len(partition) == 1 and partition[0][0] == '~':
-        fml = tuple(['not', parse(fml_str[1:])])
-    elif partition[0][0].startswith('A'):
-        fml = tuple(['all', {x for x in partition[0][0][1:]}, parse("".join(partition[0][1:]))])
-    elif partition[0][0].startswith('E'):
-        fml = tuple(['exists', {x for x in partition[0][0][1:]}, parse("".join(partition[0][1:]))])
+    
+    if len(partition) == 1:
+        # extra outter brackets
+        if (partition[0][0], partition[0][-1]) == ('(', ')'):
+            fml = tuple(parse(fml_str[1:-1]))
+        # ~ is main connective
+        elif partition[0][0] == '~':
+            fml = tuple(['not', parse(fml_str[1:])])
+        elif partition[0][0].startswith('A'):
+            fml = tuple(['all', {x for x in partition[0][0][1:]}, parse("".join(partition[0][1:]))])
+        elif partition[0][0].startswith('E'):
+            fml = tuple(['exists', {x for x in partition[0][0][1:]}, parse("".join(partition[0][1:]))])
     else: 
         operator = [s[0] for s in partition if len(s) == 1 and s[0] in
                         {'&', 'V', '->'}]
