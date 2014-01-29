@@ -5,10 +5,10 @@ def constant(x):
     return isinstance(x, str) and x in 'abc'
 
 def variable(x):
-    return isinstance(x, str) and x in 'xyz'
+    return isinstance(x, str) and x[0] in 'xyz'
 
 def function(x):
-    return isinstance(x, tuple) and x[0] in 'fghj'
+    return isinstance(x, tuple) and x[0][0] in 'fghj'
 
 # Convert a formula to a string.
 def fml_to_str(f):
