@@ -173,6 +173,71 @@ def get_preds(f):
         preds.update(get_preds(f[2]))
     return preds
 
+# Return a set of constants.
+def get_constants(f):
+    if pred(f):
+        consts = set()
+        for a in f[1]:
+            if constant(a):
+                consts.add(a)
+        return consts
+    if f[0] == 'not':
+        return get_constants(f[1])
+    if f[0] == 'and' or f[0] == 'or':
+        consts = set()
+        for g in f[1]:
+            consts |= (get_constants(g))
+        return consts
+    if f[0] == 'arrow':
+        return get_constants(f[1]) | (get_constants(f[2]))
+    if f[0] == 'all' or f[0] == 'exists':
+        return get_constants(f[2])
+
+# Return a set of variables.
+def get_variables(f):
+    if pred(f):
+        variables = set()
+        for a in f[1]:
+            if variable(a):
+                variables.add(a)
+            if function(a):
+                for b in a[1]:
+                    variables.add(b)
+        return variables
+    if f[0] == 'not':
+        return get_variables(f[1])
+    if f[0] == 'and' or f[0] == 'or':
+        variables = set()
+        for g in f[1]:
+            variables |= (get_variables(g))
+        return variables
+    if f[0] == 'arrow':
+        return get_variables(f[1]) | (get_variables(f[2]))
+    if f[0] == 'all' or f[0] == 'exists':
+        return get_variables(f[2])
+
+# Return a dictionary from functions to their arities.
+def get_functions(f):
+    if pred(f):
+        funcs = {}
+        for a in f[1]:
+            if function(a):
+                funcs[a[0]] = len(a[1])
+        return funcs
+    if f[0] == 'not':
+        return get_functions(f[1])
+    if f[0] == 'and' or f[0] == 'or':
+        funcs = {}
+        for g in f[1]:
+            funcs.update(get_functions(g))
+        return funcs
+    if f[0] == 'arrow':
+        funcs = get_functions(f[1])
+        funcs.update(get_functions(f[2]))
+        return funcs
+    if f[0] == 'all' or f[0] == 'exists':
+        return get_functions(f[2])
+
 # Checks the validity of f on k models of size n. Returns the first countermodel
 # found. If no countermodel of size n is found, returns None.
 def check_models(f, n, k):
@@ -180,16 +245,23 @@ def check_models(f, n, k):
     from random import randint, sample
     domain = {str(i) for i in range(n)}
     preds = get_preds(f)
+    consts = get_constants(f)
+    variables = get_variables(f)
+    funcs = get_functions(f)
     combos = {p:{combo for combo in combinations_with_replacement(domain, preds[p])} for p in preds}
+    combos.update({f:{combo for combo in combinations_with_replacement(domain, funcs[f])} for f in funcs})
     hash_list = []
     checked = 0
     while checked < k:
         intprt = {p:frozenset(sample(combos[p], randint(0, len(combos[p])))) for p in preds}
-        model_hash = hash(frozenset(intprt.items()))
+        intprt.update({f:{x:sample(domain, 1)[0] for x in combinations(domain, funcs[f])} for f in funcs})
+        intprt.update({c:sample(domain, 1)[0] for c in consts})
+        model_hash = hash(frozenset({a:(intprt[a] if not a in funcs else hash(frozenset(intprt[a].items()))) for a in intprt.keys()}.items()))
         if not model_hash in hash_list:
             hash_list.append(model_hash)
             checked += 1
-            if not evaluate(f, {}, intprt, domain):
+            asgmnt = {v:sample(domain, 1)[0] for v in variables}
+            if not evaluate(f, asgmnt, intprt, domain):
                 return intprt
     return None
         
