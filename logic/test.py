@@ -153,4 +153,14 @@ def test2():
         print(pred.fml_to_str(f))
         print()
 
-eval_test2()
+def test3():
+    for i in range(100):
+        f = pred.random_fml((2, 5))
+        g = pred.skolemize(f)
+        h = ('and', [('arrow', f, g), ('arrow', g, f)])
+        print(pred.fml_to_str(f))
+        print(pred.fml_to_str(pred.skolemize(f)))
+        print(pred.check_models(h, 10, 10))
+        print()
+
+test3()
