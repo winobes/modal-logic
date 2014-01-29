@@ -264,3 +264,121 @@ def parse(fml_str):
         elif operator[0] == 'V':
             fml = tuple(['or', [parse("".join(s)) for s in partition if not s == ['V'] ] ])
     return fml 
+
+# Standardise variables; i.e. each variable is bound at most once. If
+# necessary, variables are renamed to an indexed x variable (e.g. "x0").
+def safe(f):
+    return safe_do(f, [])
+
+# Helper function for safe(). The boundvars argument is a list of variables
+# already bound.
+def safe_do(f, boundvars):
+    if pred(f):
+        return f
+    if f[0] == 'not':
+        return ('not', safe_do(f[1], boundvars))
+    if f[0] == 'and' or f[0] == 'or':
+        return (f[0], [safe_do(g, boundvars) for g in f[1]])
+    if f[0] == 'arrow':
+        return ('arrow', safe_do(f[1], boundvars), safe_do(f[2], boundvars))
+    if f[0] == 'all' or f[0] == 'exists':
+        g = safe_do(f[2], boundvars)
+        quantvars = set()
+        for v in f[1]:
+            if v in boundvars:
+                i = 0
+                while 'x' + str(i) in boundvars:
+                    i += 1
+                w = 'x' + str(i)
+                g = safe_replace(g, v, w)
+            else:
+                w = v
+            quantvars.add(w)
+            boundvars.append(w)
+        return (f[0], quantvars, g)
+    raise ValueError('unknown operator: %s' % f[0])
+
+# Helper function for safe(): replace every occurrence of the variable v with
+# w.
+def safe_replace(f, v, w):
+    if pred(f):
+        return (f[0], [a if a != v else w for a in f[1]])
+    if f[0] == 'not':
+        return ('not', safe_replace(f[1], v, w))
+    if f[0] == 'and' or f[0] == 'or':
+        return (f[0], [safe_replace(g, v, w) for g in f[1]])
+    if f[0] == 'arrow':
+        return ('arrow', safe_replace(f[1], v, w), safe_replace(f[2], v, w))
+    if f[0] == 'all' or f[0] == 'exists':
+        return f
+    raise ValueError('unknown operator: %s' % f[0])
+
+# Skolemize a formule; i.e. replace each existentially quantified variable with
+# a Skolem function.
+def skolemize(f):
+    return skolemize_do(safe(f), skolemize_get_funcs(f), [])
+
+# Helper function for skolemize().
+# - The funcs argument is a list of function symbols occurring in the formula.
+# - The univars argument is a list of universally quantified variables that
+#   need to be arguments for the Skolem function.
+def skolemize_do(f, funcs, univars):
+    if pred(f):
+        return f
+    if f[0] == 'not':
+        return ('not', skolemize_do(f[1], funcs, univars))
+    if f[0] == 'and' or f[0] == 'or':
+        return (f[0], [skolemize_do(g, funcs, univars) for g in f[1]])
+    if f[0] == 'arrow':
+        return ('arrow', skolemize_do(f[1], funcs, univars),
+            skolemize_do(f[2], funcs, univars))
+    if f[0] == 'all':
+        univars += list(f[1])
+        g = (f[0], f[1], skolemize_do(f[2], funcs, univars))
+        for v in f[1]:
+            univars.remove(v)
+        return g
+    if f[0] == 'exists':
+        g = f[2]
+        for v in f[1]:
+            i = 0
+            while 'f' + str(i) in funcs:
+                i += 1
+            func = 'f' + str(i)
+            g = skolemize_replace(g, v, (func, univars))
+            funcs.append(func)
+        return skolemize_do(g, funcs, univars)
+    raise ValueError('unknown operator: %s' % f[0])
+
+# Helper function for skolemize(): return a list of all function symbols used
+# in the formula f.
+def skolemize_get_funcs(f):
+    if pred(f):
+        return [a[0] for a in f[1] if function(a)]
+    if f[0] == 'not':
+        return skolemize_get_funcs(f[1])
+    if f[0] == 'and' or f[0] == 'or':
+        l = []
+        for g in f[1]:
+            l.append(skolemize_get_funcs(g))
+        return l
+    if f[0] == 'arrow':
+        return skolemize_get_funcs(f[1]) + skolemize_get_funcs(f[2])
+    if f[0] == 'all' or f[0] == 'exists':
+        return skolemize_get_funcs(f[2])
+    raise ValueError('unknown operator: %s' % f[0])
+
+# Helper function for skolemize():
+def skolemize_replace(f, v, func):
+    if pred(f):
+        return (f[0], [a if a != v else func for a in f[1]])
+    if f[0] == 'not':
+        return ('not', skolemize_replace(f[1], v, func))
+    if f[0] == 'and' or f[0] == 'or':
+        return (f[0], [skolemize_replace(g, v, func) for g in f[1]])
+    if f[0] == 'arrow':
+        return ('arrow', skolemize_replace(f[1], v, func),
+            skolemize_replace(f[2], v, func))
+    if f[0] == 'all' or f[0] == 'exists':
+        return (f[0], f[1], skolemize_replace(f[2], v, func))
+    raise ValueError('unknown operator: %s' % f[0])
