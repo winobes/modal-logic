@@ -163,4 +163,60 @@ def test3():
         print(pred.check_models(h, 10, 10))
         print()
 
-test3()
+def cnf_report_1(starting_atomics, dnf = False):
+    # tests when cnf reaches Python's recursion limit (default 1000)
+    # cnf reaches recursion limit at around 35-45 atoms
+    # reaces limit at 4-5 atoms if they start in DNF 
+    # could not find break point for cnf_tt
+        n_atomics = starting_atomics 
+        cnf_number = n_atomics 
+        cnf_done = False
+        while True:
+            try:    
+                f = prop.random_fml((n_atomics, n_atomics+1)) 
+                if dnf: f = prop.dnf_tt(f)
+                print(n_atomics)
+                print('f:', prop.fml_to_str(f), '\n')
+                h = prop.cnf_tt(f)
+                if not cnf_done:
+                    g = prop.cnf(f)
+                    print('cnf:', prop.fml_to_str(g), '\n')
+                print('cnf_tt:', prop.fml_to_str(h), '\n')
+                print('\n-----------------------------------\n')
+                n_atomics += 1
+                if n_atomics >= 1000: break
+            except RuntimeError:
+                if cnf_done:
+                    break
+                cnf_done = True
+                cnf_number = n_atomics
+        print('Done.')
+        print('cnf', cnf_number)
+        print('cnf_tt', n_atomics)
+
+def cnf_report_2(n_formulas, n_atomics, dnf = False):
+    import time
+    # measures the time it takes to convert n_formulas
+    # to CNF
+    sigma = [prop.random_fml((n_atomics, n_atomics+1)) for i in range(n_formulas)]
+    sigma_1 = [prop.dnf_tt(f) for f in sigma]
+    if dnf: sigma = sigma_1
+
+    time_cnf = time.time()
+    for f in sigma:
+        g = prop.cnf(f)
+    time_cnf = time.time() - time_cnf
+    print(time_cnf)
+
+    time_cnf_tt = time.time()
+    for f in sigma:
+        g = prop.cnf_tt(f)
+    time_cnf_tt = time.time() - time_cnf_tt
+    print(time_cnf_tt)
+
+    if time_cnf > time_cnf_tt:
+        print("cnf_tt faster by", time_cnf - time_cnf_tt)
+    else:
+        print("cnf faster by", time_cnf_tt - time_cnf)
+
+cnf_report_2(2000,1, True)
