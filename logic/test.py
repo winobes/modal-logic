@@ -18,9 +18,17 @@ def model_checking():
     sigma = [pred.parse(phi) for phi in fml_strs]
     for phi in sigma:
         print(pred.fml_to_str(phi))
-        print("Found countermodel:", pred.check_models(phi, 100, 10000))
+        print("Found countermodel:", pred.check_models(phi, 5, 1000))
         print() 
 
+def random_model_checking():
+    sigma = [pred.random_fml((1,5)) for i in range(1000)]
+    i = 0
+    for phi in sigma:
+        if pred.check_models(phi, 3, 50) == None:
+            print("Theorem:", pred.fml_to_str(phi))
+            i += 1
+    print("%", i/2, "theorems")
 
 def cnf_testing():
     # CNF is faster than CNF_TT for random formulas of 13 or fewer atoms.
@@ -95,9 +103,10 @@ def eval_test2():
         'Q':{(0,), (1,), (2,)},
         'R':{(0, 1), (1, 2), (2, 0)},
         'S':{(0, 0), (1, 1), (2, 2)},
-        'a':0,
-        'b':1,
-        'c':2,
+        'a':{():0},
+        'b':{():1},
+        'c':{():2},
+        'd':{():0},
         'f':{(i,):0 for i in domain},
         'g':{(i,):i for i in domain},
         'h':{(i, j):i for i in domain for j in domain},
@@ -154,14 +163,32 @@ def test2():
         print()
 
 def test3():
-    for i in range(100):
-        f = pred.random_fml((2, 5))
+    for i in range(10):
+        f = pred.random_fml((1, 5))
         g = pred.skolemize(f)
         h = ('and', [('arrow', f, g), ('arrow', g, f)])
         print(pred.fml_to_str(f))
         print(pred.fml_to_str(pred.skolemize(f)))
-        print(pred.check_models(h, 10, 10))
+        a = pred.check_models(h, 10, 1000)
+        if not a == None:
+            print(a)
+            print(f)
         print()
+
+def test4():
+    f = ('exists', {'y'}, ('R', ['y']))
+    print(pred.fml_to_str(f))
+    g = pred.skolemize(f)
+    print(pred.fml_to_str(g))
+    h = ('and', [('arrow', f, g), ('arrow', g, f)])
+    print("intpretation:", pred.check_models(h, 2, 100)[0])
+    print("assignment  :", pred.check_models(h, 2, 100)[1])
+    
+def test5():
+    '~ExPx->Ax~Px',
+    f = ('arrow', ('not', ('exists', {'x'}, ('P', [('g', ['x'])]) )), ('all', {'y'}, ('not', ('P', ['y']))))
+    print(pred.fml_to_str(f))
+    print(pred.fml_to_str(pred.skolemize(f)))
 
 def cnf_report_1(starting_atomics, dnf = False):
     # tests when cnf reaches Python's recursion limit (default 1000)
@@ -219,4 +246,4 @@ def cnf_report_2(n_formulas, n_atomics, dnf = False):
     else:
         print("cnf faster by", time_cnf_tt - time_cnf)
 
-cnf_report_2(2000,1, True)
+test5()

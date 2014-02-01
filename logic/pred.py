@@ -2,13 +2,13 @@ def pred(f):
     return f[0] in 'PQRS'
 
 def constant(x):
-    return isinstance(x, str) and x in 'abc'
+    return function(x) and len(x[1]) == 0 
 
 def variable(x):
     return isinstance(x, str) and x[0] in 'xyz'
 
 def function(x):
-    return isinstance(x, tuple) and x[0][0] in 'fghj'
+    return isinstance(x, tuple) and x[0][0] in 'abcdfghj'
 
 # Convert a formula to a string.
 def fml_to_str(f):
@@ -47,10 +47,15 @@ def subfml_to_str(f):
 # arguments to a string.
 def args_to_str(a):
     s = '('
-    for i in range(len(a)):
-        s += a[i][0] + args_to_str(a[i][1]) if function(a[i]) else str(a[i])
-        if i != len(a) - 1:
-            s += ', '
+    for x in a:
+        if function(x):
+            s += x[0]
+            if not constant(x):
+                s += args_to_str(x[1]) 
+        else: 
+            s += str(x)
+        s += ', '
+    s = s[:-2]
     s += ')'
     return s
 
@@ -63,16 +68,18 @@ def random_fml(npreds = (2, 8), arities = {}):
         raise ValueError('invalid range')
 
     preds = tuple([p, 0] for p in 'PQRS')
-    constants = ('a', 'b', 'c')
     variables = ('x', 'y', 'z')
-    functions = tuple([f, 0] for f in 'fghj')
+    functions = tuple([f, 0] for f in 'abcdfghj')
     operators = ('not', 'and', 'or', 'arrow', 'all', 'exists')
 
     for p in preds:
         p[1] = arities[p[0]] if p[0] in arities else randrange(1, 4)
 
     for f in functions:
-        f[1] = arities[f[0]] if f[0] in arities else randrange(1, 2)
+        if f[0] in 'fghj':
+            f[1] = arities[f[0]] if f[0] in arities else randrange(1, 3)
+        elif f[0] in 'abcd':
+            f[1] = 0 
 
     npreds = randrange(*npreds)
     fmls = []
@@ -81,17 +88,15 @@ def random_fml(npreds = (2, 8), arities = {}):
         pred = get_random_item(preds)
         args = []
         for i in range(pred[1]):
-            choice = randrange(0, 3)
+            choice = randrange(0, 2)
             if choice == 0:
-                args.append(get_random_item(constants))
-            elif choice == 1:
                 args.append(get_random_item(variables))
             else:
                 func = get_random_item(functions)
                 args.append((func[0],
                     list(get_random_item(variables) for i in range(func[1]))))
-            fmls.append((pred[0], args))
-
+        fmls.append((pred[0], args))
+    
     while len(fmls) > 1:
         o = get_random_item(operators)
         if o == 'not':
@@ -129,8 +134,8 @@ def random_fml(npreds = (2, 8), arities = {}):
 # TODO Test for predicate arity errors in assignment
 def evaluate(f, asgmnt, intprt, domain):
     if pred(f):
-        return tuple(interpret_args(list(f[1]), asgmnt, intprt)) in \
-            intprt[f[0]]
+        return tuple([interpret_arg(arg, intprt, asgmnt) 
+                                        for arg in f[1]]) in intprt[f[0]]
     if f[0] == 'not':
         return not evaluate(f[1], asgmnt, intprt, domain)
     if f[0] == 'and':
@@ -241,43 +246,38 @@ def get_functions(f):
 # Checks the validity of f on k models of size n. Returns the first countermodel
 # found. If no countermodel of size n is found, returns None.
 def check_models(f, n, k):
-    from itertools import combinations, combinations_with_replacement
+    from itertools import combinations, product 
     from random import randint, sample
     domain = {str(i) for i in range(n)}
     preds = get_preds(f)
-    consts = get_constants(f)
     variables = get_variables(f)
     funcs = get_functions(f)
-    combos = {p:{combo for combo in combinations_with_replacement(domain, preds[p])} for p in preds}
-    combos.update({f:{combo for combo in combinations_with_replacement(domain, funcs[f])} for f in funcs})
+    combos = {p:{combo for combo in product(*[domain for i in range(preds[p])])} for p in preds}
+    combos.update({f:{combo for combo in product(*[domain for i in range(funcs[f])])} for f in funcs})
     hash_list = []
     checked = 0
     while checked < k:
         intprt = {p:frozenset(sample(combos[p], randint(0, len(combos[p])))) for p in preds}
-        intprt.update({f:{x:sample(domain, 1)[0] for x in combinations(domain, funcs[f])} for f in funcs})
-        intprt.update({c:sample(domain, 1)[0] for c in consts})
+        intprt.update({f:{x:sample(domain, 1)[0] for x in combos[f]} for f in funcs})
         model_hash = hash(frozenset({a:(intprt[a] if not a in funcs else hash(frozenset(intprt[a].items()))) for a in intprt.keys()}.items()))
         if not model_hash in hash_list:
             hash_list.append(model_hash)
             checked += 1
             asgmnt = {v:sample(domain, 1)[0] for v in variables}
             if not evaluate(f, asgmnt, intprt, domain):
-                return intprt
+                return (intprt, asgmnt)
     return None
         
 # Helper function for evaluate(): interpret the arguments of a predicate or
 # function symbol.
-def interpret_args(args, asgmnt, intprt):
-    for i in range(len(args)):
-        if constant(args[i]):
-            args[i] = intprt[args[i]]
-        elif function(args[i]):
-            funcsymbol = args[i][0]
-            funcargs = interpret_args(args[i][1], asgmnt, intprt)
-            args[i] = intprt[funcsymbol][tuple(funcargs)]
-        elif variable(args[i]):
-            args[i] = asgmnt[args[i]]
-    return args
+def interpret_arg(f, asgmnt, intprt):
+    if variable(f):
+        return intprt[f] 
+    elif function(f):
+        return asgmnt[f[0]][tuple([interpret_arg(arg, asgmnt, intprt) 
+                        for arg in f[1]])]
+    else:
+        raise ValueError('expected variable or function')
 
 # takes a well-formatted string and returns a formula
 def parse(fml_str):
@@ -310,6 +310,8 @@ def parse(fml_str):
                 i += 1
                 partition.append([])
     partition = partition[:-1]
+    
+    print(partition)
     
     if len(partition) == 1:
         # extra outter brackets
@@ -414,9 +416,9 @@ def skolemize_do(f, funcs, univars):
         g = f[2]
         for v in f[1]:
             i = 0
-            while 'f' + str(i) in funcs:
+            while 'a' + str(i) in funcs:
                 i += 1
-            func = 'f' + str(i)
+            func = 'a' + str(i)
             g = skolemize_replace(g, v, (func, univars))
             funcs.append(func)
         return skolemize_do(g, funcs, univars)
@@ -443,7 +445,7 @@ def skolemize_get_funcs(f):
 # Helper function for skolemize():
 def skolemize_replace(f, v, func):
     if pred(f):
-        return (f[0], [a if a != v else func for a in f[1]])
+        return (f[0], [skolemize_replace_terms(t, v, func) if t != v else func for t in f[1]])
     if f[0] == 'not':
         return ('not', skolemize_replace(f[1], v, func))
     if f[0] == 'and' or f[0] == 'or':
@@ -454,3 +456,11 @@ def skolemize_replace(f, v, func):
     if f[0] == 'all' or f[0] == 'exists':
         return (f[0], f[1], skolemize_replace(f[2], v, func))
     raise ValueError('unknown operator: %s' % f[0])
+
+def skolemize_replace_terms(t, v, func):
+    if variable(t):
+        if t == v:
+            return func 
+    elif function(t):
+        return (t[0], [skolemize_replace_terms(s, v, func) for s in t[1]])
+    raise ValueError('expected a term, but got', t)

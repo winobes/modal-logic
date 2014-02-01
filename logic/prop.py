@@ -292,7 +292,8 @@ def dnf_tt(f):
 def cnf_tt(f):
     f_false_tt = [row for row in gen_tt(get_atoms(f)) 
                  if evaluate(f, row) == False]
-    return tuple(['and', [tuple(['or', [p if not row[p] else tuple(['not', p]) for p in row.keys() ]]) for row in f_false_tt] ])
+    return tuple(['and', [tuple(['or', [p if not row[p] else tuple(['not', p]) 
+                 for p in row.keys() ]]) for row in f_false_tt] ])
 
 # Returns the set of propositions in f.
 def get_atoms(f):
