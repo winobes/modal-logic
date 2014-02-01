@@ -464,3 +464,123 @@ def skolemize_replace(f, v, func):
     if f[0] == 'all' or f[0] == 'exists':
         return (f[0], f[1], skolemize_replace(f[2], v, func))
     raise ValueError('unknown operator: %s' % f[0])
+
+#
+# Unification
+#
+
+# - A list of terms simply is the list of arguments of a predicate or a
+#   function.
+# - A substitution is a list of pairs. For each pair, the first element is a
+#   variable and the second element a term.
+
+# Return a substitution that unifies two lists of terms. Return None if no such
+# substitution exists.
+def unify_termlists(t1, t2):
+    if len(t1) == len(t2) == 0:
+        return []
+    if len(t1) != len(t2):
+        return None
+    else:
+        subst = []
+        for (u1, u2) in zip(t1, t2):
+            v1 = subst_term(subst, u1)
+            v2 = subst_term(subst, u2)
+            newsubst = unify_terms(v1, v2)
+            if newsubst == None:
+                return None
+            subst = compose_subst(newsubst, subst)
+        return subst
+
+# Return a substitution that unifies two terms. Return None if no such
+# substitution exists.
+def unify_terms(t1, t2):
+    if variable(t1) and variable(t2):
+        if t1 == t2:
+            return []
+        else:
+            return [(t1, t2)]
+    if variable(t1) and not variable(t2):
+        if t1 in variables_in_term(t2):
+            return None
+        else:
+            return [(t1, t2)]
+    if not variable(t1) and variable(t2):
+        if t2 in variables_in_term(t1):
+            return None
+        else:
+            return [(t2, t1)]
+    else:
+        if t1[0] != t2[0]:
+            return None
+        else:
+            return unify_termlists(t1[1], t2[1])
+
+# Return the composition of two substitutions. That is, return the substitution
+# equivalent to the application of s1 after s2.
+def compose_subst(s1, s2):
+    return s1 + [(s[0], subst_term(s1, s[1])) for s in s2]
+
+# Return the set of all variables occurring in a term.
+def variables_in_term(term):
+    if variable(term):
+        return {term}
+    else:
+        var = set()
+        for t in term[1]:
+            var |= variables_in_term(t)
+        return var
+
+# Apply a substitution to a list of terms.
+def subst_termlist(subst, termlist):
+    return [subst_term(subst, t) for t in termlist]
+
+# Apply a substituion to a term.
+def subst_term(subst, term):
+    if variable(term):
+        return subst_var(subst, term)
+    else:
+        return (term[0], subst_termlist(subst, term[1]))
+
+# Apply a substitution to a variable.
+def subst_var(subst, var):
+    if subst == []:
+        return var
+    if var == subst[0][0]:
+        return subst[0][1]
+    else:
+        return subst_var(subst[1:], var)
+
+# Convert a substitution to a string.
+def subst_to_str(subst):
+    if subst == None:
+        return '{}'
+    string = '{'
+    for s in subst:
+        string += s[0] + ' -> ' + term_to_str(s[1]) + ', '
+    if len(string) > 1:
+        string = string[:-2]
+    string += '}'
+    return string
+
+# Convert a list of terms to a string.
+def termlist_to_str(termlist):
+    s = ''
+    for t in termlist:
+        s += term_to_str(t) + ', '
+    s = s[:-2]
+    return s
+
+# Convert a term to a string.
+def term_to_str(term):
+    if variable(term):
+        return term
+    else:
+        if len(term[1]) == 0:
+            return term[0]
+        else:
+            s = term[0] + '('
+            for t in term[1]:
+                s += term_to_str(t) + ', '
+            s = s[:-2] + ')'
+            return s

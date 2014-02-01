@@ -190,6 +190,32 @@ def test5():
     print(pred.fml_to_str(f))
     print(pred.fml_to_str(pred.skolemize(f)))
 
+def test6():
+    tests = [
+        (['x'],                                   ['x']),
+        (['x'],                                   ['y']),
+        (['x'],                                   [('f', ['x'])]),
+        (['x'],                                   [('f', ['y'])]),
+        ([('f', ['x'])],                          ['y']),
+        ([('f', ['x'])],                          [('g', ['y'])]),
+        ([('f', ['x'])],                          [('f', ['y'])]),
+        ([('f', ['x', 'y'])],                     [('f', ['y', 'z'])]),
+        ([('f', ['x', ('g', ['z']), 'z'])],       [('f', [('g', ['y']), 'y', 'z'])]),
+        ([('f', ['x', ('g', ['z']), ('a', [])])], [('f', [('g', ['y']), 'y', 'z'])]),
+        ([('f', [('g', ['z']), ('a', [])])],      [('f', ['y', 'z'])]),
+        ([('f', [('g', ['x']), 'x'])],            [('f', ['y', ('a', [])])]),
+        (['x', ('a', [])],                        ['y', 'x'])
+    ]
+
+    for terms in tests:
+        subst = pred.unify_termlists(terms[0], terms[1])
+        print('term 1: ', pred.termlist_to_str(terms[0]))
+        print('term 2: ', pred.termlist_to_str(terms[1]))
+        print('subst:  ', pred.subst_to_str(subst))
+        if subst != None:
+            print('result: ', pred.termlist_to_str(pred.subst_termlist(subst, terms[0])))
+        print()
+
 def cnf_report_1(starting_atomics, dnf = False):
     # tests when cnf reaches Python's recursion limit (default 1000)
     # cnf reaches recursion limit at around 35-45 atoms
@@ -246,4 +272,4 @@ def cnf_report_2(n_formulas, n_atomics, dnf = False):
     else:
         print("cnf faster by", time_cnf_tt - time_cnf)
 
-test5()
+test6()
