@@ -311,8 +311,6 @@ def parse(fml_str):
                 partition.append([])
     partition = partition[:-1]
     
-    print(partition)
-    
     if len(partition) == 1:
         # extra outter brackets
         if (partition[0][0], partition[0][-1]) == ('(', ')'):
@@ -376,7 +374,7 @@ def safe_do(f, boundvars):
 # w.
 def safe_replace(f, v, w):
     if pred(f):
-        return (f[0], [a if a != v else w for a in f[1]])
+        return (f[0], [replace_terms(t, v, w) if t != v else w for t in f[1]])
     if f[0] == 'not':
         return ('not', safe_replace(f[1], v, w))
     if f[0] == 'and' or f[0] == 'or':
@@ -386,6 +384,16 @@ def safe_replace(f, v, w):
     if f[0] == 'all' or f[0] == 'exists':
         return f
     raise ValueError('unknown operator: %s' % f[0])
+
+def replace_terms(t, v, w):
+    if variable(t):
+        if t == v:
+            return w 
+        else:
+            return t
+    elif function(t):
+        return (t[0], [replace_terms(s, v, w) for s in t[1]])
+    raise ValueError('expected a term, but got', t)
 
 # Skolemize a formule; i.e. replace each existentially quantified variable with
 # a Skolem function.
@@ -445,7 +453,7 @@ def skolemize_get_funcs(f):
 # Helper function for skolemize():
 def skolemize_replace(f, v, func):
     if pred(f):
-        return (f[0], [skolemize_replace_terms(t, v, func) if t != v else func for t in f[1]])
+        return (f[0], [replace_terms(t, v, func) if t != v else func for t in f[1]])
     if f[0] == 'not':
         return ('not', skolemize_replace(f[1], v, func))
     if f[0] == 'and' or f[0] == 'or':
@@ -456,11 +464,3 @@ def skolemize_replace(f, v, func):
     if f[0] == 'all' or f[0] == 'exists':
         return (f[0], f[1], skolemize_replace(f[2], v, func))
     raise ValueError('unknown operator: %s' % f[0])
-
-def skolemize_replace_terms(t, v, func):
-    if variable(t):
-        if t == v:
-            return func 
-    elif function(t):
-        return (t[0], [skolemize_replace_terms(s, v, func) for s in t[1]])
-    raise ValueError('expected a term, but got', t)
