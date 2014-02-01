@@ -96,7 +96,7 @@ def random_fml(npreds = (2, 8), arities = {}):
                 args.append((func[0],
                     list(get_random_item(variables) for i in range(func[1]))))
         fmls.append((pred[0], args))
-    
+
     while len(fmls) > 1:
         o = get_random_item(operators)
         if o == 'not':
