@@ -6,6 +6,7 @@
 \usepackage{amssymb}
 \usepackage{minted}
 \usepackage[margin=2cm]{geometry}
+\usepackage[final]{pdfpages}
 
 % Use the nicer phi
 \let\phi\varphi
@@ -182,12 +183,35 @@ Filtering the truth table to only the rows where $f$ is $False$ is rather
         intensive since the formula must be evaluated at each of the
         $2^n$ rows and the evaluation function may be called up to once
         for each subformula of $f$.
-Nevertheless, $cnf\_tt$ performs better on longer random formulas.
-It is faster beginning at formulas with $14$ atomic propositions and 
-        $cnf$ reaches Python's default maximum recursion depth of $1000$
-        beginning at around $35$ atomics. 
-When the formulas start in DNF, $cnf\_tt$ is faster beginning at formulas
-        with $2$ atomic sentences, and $cnf$ reaches the recursion limit
-        beginning at $3$ atomics.
+Nevertheless, $cnf\_tt$ performs better on longer random formulas, especially 
+        where total number of propositions greatly exceeds the total number of
+        unique propositions. 
 
+Below: time difference ($cnf$ minus $cnf\_tt$) in converting $5000$ random formulas
+        to CNF.
+The $x$ axis ranges over the number of unique propositions, and the $y$ axis 
+        is the total number of propositions in the formula.\\
+
+\noindent
+\includegraphics[
+    page=1,
+    width=\textwidth,
+    height=\textheight,
+    keepaspectratio
+]{report_colors_cropped.pdf}
+\vfill
+\newpage
+
+For formulas given in DNF, $cnf\_tt$ is faster for formulas of any length 
+        sentences, and $cnf$ reaches Python's default maximum recursion depth 
+        of $1000$ beginning at $3$ propositions.
+
+The run time of $cnf$ is agnostic to the number of unique propositions
+        in the given formula since uniqueness of a proposition is primarily
+        semantic notion.
+The semantic algorithm, $cnf\_tt$, is less concerned with the syntactic
+        structure of the given formula since this has less bearing on the
+        construction of a truth table.
+The relative strengths of the two algorithms highlights two distinct ways that
+        a propositional formula can be complex.
 \end{document}

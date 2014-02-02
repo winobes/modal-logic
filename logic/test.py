@@ -239,8 +239,8 @@ def cnf_report_3():
     import sys
     import csv
     
-    sys.setrecursionlimit(5000)
-    report = [[cnf_report_2(5000, tot_atoms+1, dif_atoms+1) for dif_atoms in range(10)] for tot_atoms in range(25)]
+    sys.setrecursionlimit(50000)
+    report = [[cnf_report_2(50, tot_atoms+1, dif_atoms+1, dnf = True) for dif_atoms in range(10)] for tot_atoms in range(5)]
 
     print(report)
 
