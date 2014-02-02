@@ -30,40 +30,6 @@ def random_model_checking():
             i += 1
     print("%", i/2, "theorems")
 
-def cnf_testing():
-    # CNF is faster than CNF_TT for random formulas of 13 or fewer atoms.
-    # CNF reaches default maximum recursion depth (1000) at 25 atoms  
-    # for formulas in DNF, the truth table method is faster starting at
-    # 3 atoms.
-    import time
-    sigma = [prop.random_fml((15,16)) for i in range(1000)]
-    sigma_dnf = [prop.dnf_tt(phi) for phi in sigma]
-
-    start = time.time()
-    for phi in sigma:
-        g = prop.cnf(phi)
-    end = time.time()
-    print('Random to CNF   Time:', end - start)
-
-    start = time.time()
-    for phi in sigma:
-        g = prop.cnf_tt(phi)
-    end = time.time()
-    print('Random to CNF_TT Time:', end - start)
-
-    start = time.time()
-    for phi in sigma_dnf:
-        g = prop.cnf(phi)
-    end = time.time()
-    print('DNF to CNF   Time:', end - start)
-
-    start = time.time()
-    for phi in sigma_dnf:
-        g = prop.cnf_tt(phi)
-    end = time.time()
-    print('DNF to CNF_TT Time:', end - start)
-
-
 def print_test():
     fml_strs = {'(EyPx->Syzz)->Azx~Sxzz',
               '~(RxVAxQxzzVQyyy)&~ExQxxy',
@@ -170,11 +136,11 @@ def test3():
         print(pred.fml_to_str(f))
         print(pred.fml_to_str(pred.skolemize(f)))
         a = pred.check_models(h, 10, 1000)
-        if not a == None:
-            print(a)
-            print(f)
-        print()
-
+        #if not a == None:
+            #print(a)
+            #print(f)
+        #print()
+#
 def test4():
     f = ('exists', {'y'}, ('R', ['y']))
     print(pred.fml_to_str(f))
@@ -185,8 +151,10 @@ def test4():
     print("assignment  :", pred.check_models(h, 2, 100)[1])
     
 def test5():
-    '~ExPx->Ax~Px',
-    f = ('arrow', ('not', ('exists', {'x'}, ('P', [('g', ['x'])]) )), ('all', {'y'}, ('not', ('P', ['y']))))
+    f = ('or', [
+        ('exists', {'z','y'}, ('not', ('S', ['y', ('c',[]) ]))), 
+        ('exists', {'z'}, ('Q', [(('g',['x','z'])), ('d', []), 'y']))
+        ])    
     print(pred.fml_to_str(f))
     print(pred.fml_to_str(pred.skolemize(f)))
 
@@ -247,11 +215,11 @@ def cnf_report_1(starting_atomics, dnf = False):
         print('cnf', cnf_number)
         print('cnf_tt', n_atomics)
 
-def cnf_report_2(n_formulas, n_atomics, dnf = False):
+def cnf_report_2(n_formulas, n_atomics, n_distinct_atoms, dnf = False):
     import time
     # measures the time it takes to convert n_formulas
     # to CNF
-    sigma = [prop.random_fml((n_atomics, n_atomics+1)) for i in range(n_formulas)]
+    sigma = [prop.random_fml((n_atomics, n_atomics+1), n_distinct_atoms) for i in range(n_formulas)]
     sigma_1 = [prop.dnf_tt(f) for f in sigma]
     if dnf: sigma = sigma_1
 
@@ -259,17 +227,26 @@ def cnf_report_2(n_formulas, n_atomics, dnf = False):
     for f in sigma:
         g = prop.cnf(f)
     time_cnf = time.time() - time_cnf
-    print(time_cnf)
 
     time_cnf_tt = time.time()
     for f in sigma:
         g = prop.cnf_tt(f)
     time_cnf_tt = time.time() - time_cnf_tt
-    print(time_cnf_tt)
 
-    if time_cnf > time_cnf_tt:
-        print("cnf_tt faster by", time_cnf - time_cnf_tt)
-    else:
-        print("cnf faster by", time_cnf_tt - time_cnf)
+    return (time_cnf - time_cnf_tt)
 
-test6()
+def cnf_report_3():
+    import sys
+    import csv
+    
+    sys.setrecursionlimit(5000)
+    report = [[cnf_report_2(5000, tot_atoms+1, dif_atoms+1) for dif_atoms in range(10)] for tot_atoms in range(25)]
+
+    print(report)
+
+    with open('report.csv', 'w', newline='') as csvfile:
+        reportwriter = csv.writer(csvfile, delimiter=',',
+                                quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        for row in report: reportwriter.writerow(row)
+
+cnf_report_3()
