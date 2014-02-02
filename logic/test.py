@@ -249,4 +249,4 @@ def cnf_report_3():
                                 quotechar='"', quoting=csv.QUOTE_MINIMAL)
         for row in report: reportwriter.writerow(row)
 
-cnf_report_3()
+test6()
