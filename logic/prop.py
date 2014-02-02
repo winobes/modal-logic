@@ -203,7 +203,7 @@ def nnf_do(f):
 
 # Convert to conjunctive normal form.
 def cnf(f):
-    return cnf_remove_dups(remove_double_neg(cnf_flatten(cnf_do(nnf(f)))))
+    return cnf_remove_dups(cnf_flatten(cnf_do(nnf(f))))
 
 # Helper function for cnf().
 def cnf_do(f):
@@ -269,20 +269,6 @@ def cnf_remove_dups(f):
     if f[0] == 'or':
         return ('or', list(set(f[1])))
     return f
-
-# Remove double negations.
-def remove_double_neg(f):
-    if atom(f):
-        return f
-    if f[0] == 'not':
-        if f[1][0] == 'not':
-            return f[1][1]
-        return f
-    if f[0] == 'and' or f[0] == 'or':
-        return (f[0], [remove_double_neg(g) for g in f[1]])
-    if f[0] == 'arrow':
-       return ('arrow', remove_double_neg(f[1]), remove_double_neg(f[2]))
-    raise ValueError('unknown operator:', f[0])
 
 # Uses the truth table method to compute disjunctive normal form
 def dnf_tt(f):
