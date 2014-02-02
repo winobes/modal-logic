@@ -1,5 +1,5 @@
 def atom(f):
-    return len(f) == 1
+    return f[0] in {'p','q','r','s'}
 
 # Convert a formula to a string.
 def fml_to_str(f):
@@ -33,20 +33,24 @@ def subfml_to_str(f):
     return fml_to_str(f)
 
 # Return a random formula.
-def random_fml(natoms = (2, 8)):
+def random_fml(flen = (2, 8), n_atoms = 4):
     from random import randrange
     from util import get_random_item, pop_random_item
 
-    if natoms[0] < 1 or natoms[0] >= natoms[1]:
+    if flen[0] < 1 or flen[0] >= flen[1]:
         raise ValueError('invalid range')
 
-    atoms = ('p', 'q', 'r', 's')
+    default_atoms = ['p', 'q', 'r', 's']
+    if n_atoms <= 4:
+        atoms = default_atoms[:n_atoms]
+    else:
+        atoms = ['p' + str(i) for i in range(n_atoms)]
     operators = ('not', 'and', 'or', 'arrow')
 
-    natoms = randrange(*natoms)
+    flen = randrange(*flen)
     fmls = []
 
-    for i in range(natoms):
+    for i in range(flen):
         fmls.append(get_random_item(atoms))
 
     while len(fmls) > 1:
@@ -71,10 +75,10 @@ def random_fml(natoms = (2, 8)):
 # Evaluate the formula f. The valuation val is a dictionary from proposition
 # letters to truth values.
 def evaluate(f, val):
-    if atom(f[0]):
-        if not f[0] in val:
-            raise ValueError('atom not in valuation:', f[0])
-        return val[f[0]]
+    if atom(f):
+        if not f in val:
+            raise ValueError('atom not in valuation:', f)
+        return val[f]
     if f[0] == 'not':
         return not evaluate(f[1], val)
     if f[0] == 'and':
@@ -299,7 +303,7 @@ def cnf_tt(f):
 def get_atoms(f):
     atoms = set() 
     if atom(f):
-        atoms.add(f[0])
+        atoms.add(f)
         return atoms 
     if f[0] == 'not':
         return atoms | get_atoms(f[1])
@@ -307,7 +311,7 @@ def get_atoms(f):
         return atoms | get_atoms(f[1]) | get_atoms(f[2])
     if f[0] == 'or' or f[0] == 'and':
         return atoms.union(*[get_atoms(g) for g in f[1]]) 
-    raise ValueError('unknown operator:', f[0]) 
+    raise ValueError('unknown operator:', f) 
 
 # Returns True if f evaluates to False for every possible valuation.
 def is_contr(f):
