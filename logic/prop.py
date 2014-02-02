@@ -199,9 +199,7 @@ def nnf_do(f):
             raise ValueError('unknown operator:', f[1][0])
     elif f[0] == 'and' or f[0] == 'or':
         return (f[0], [nnf_do(g) for g in f[1]])
-    elif f[0] == 'arrow':
-        return ('arrow', nnf_do(f[1]), nnf_do(f[2]))
-    raise ValueError('unknown operator:', f[0])
+    raise ValueError('unexpected operator:', f[0])
 
 # Convert to conjunctive normal form.
 def cnf(f):
