@@ -289,17 +289,15 @@ def cnf_tt(f):
 
 # Returns the set of propositions in f.
 def get_atoms(f):
-    atoms = set() 
     if atom(f):
-        atoms.add(f)
-        return atoms 
+        return {f}
     if f[0] == 'not':
-        return atoms | get_atoms(f[1])
+        return get_atoms(f[1])
     if f[0] == 'arrow':
-        return atoms | get_atoms(f[1]) | get_atoms(f[2])
+        return get_atoms(f[1]) | get_atoms(f[2])
     if f[0] == 'or' or f[0] == 'and':
-        return atoms.union(*[get_atoms(g) for g in f[1]]) 
-    raise ValueError('unknown operator:', f) 
+        return set().union(*[get_atoms(g) for g in f[1]]) 
+    raise ValueError('unknown operator:', f[0]) 
 
 # Returns True if f evaluates to False for every possible valuation.
 def is_contr(f):
