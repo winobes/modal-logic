@@ -264,8 +264,12 @@ def cnf_flatten_disj(flist):
 # Helper function for cnf(): remove duplicate disjuncts and conjuncts.
 def cnf_remove_dups(f):
     if f[0] == 'and':
-        # TODO: Remove duplicates in "and" list.
-        return ('and', [cnf_remove_dups(g) for g in f[1]])
+        cnj = []
+        for g in f[1]:
+            g = cnf_remove_dups(g)
+            if not g in cnj:
+                cnj.append(g)
+        return ('and', cnj)
     if f[0] == 'or':
         return ('or', list(set(f[1])))
     return f
