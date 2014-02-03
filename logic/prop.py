@@ -384,28 +384,3 @@ def parse(fml_str):
         elif operator[0] == 'V':
             fml = tuple(['or', [parse("".join(s)) for s in partition if not s == ['V'] ] ])
     return fml 
-
-
-"""
-def remove_dups(f):
-    if atom(f):
-        return f
-    if f[0] == 'not':
-        return ('not', remove_dups(f[1]))
-    if f[0] == 'and' or f[0] == 'or':
-        f[1] = [remove_dups(g) for g in f[1]]
-        i = 0
-        while i < len(f[1]):
-            j = i + 1
-            while j < len(f[1]):
-                if f[i][0] != 'and' and f[i][0] != 'or':
-                    if (f[1][i] == f[1][j])
-                        f[1].remove(f[1][j])
-                else
-                    # ...
-                j += 1
-            i += 1
-    if f[0] == 'arrow':
-        return ('arrow', remove_dups(f[1]), remove_dups(f[2]))
-    raise ValueError('unknown operator:', f[0])
-"""
