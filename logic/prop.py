@@ -224,13 +224,11 @@ def cnf_distribute(f1, f2):
     if f1[0] == 'and':
         if len(f1[1]) == 0:
             return f1
-        return ('and', [cnf_distribute(f1[1][0], f2)] +
-            [cnf_distribute(g, f2) for g in f1[1][1:]])
+        return ('and', [cnf_distribute(g, f2) for g in f1[1]])
     if f2[0] == 'and':
         if len(f2[1]) == 0:
             return f2
-        return ('and', [cnf_distribute(f1, f2[1][0])] +
-            [cnf_distribute(f1, g) for g in f2[1][1:]])
+        return ('and', [cnf_distribute(f1, g) for g in f2[1]])
     return ('or', [f1, f2])
 
 # Helper function for cnf(): collapse conjunction lists and disjunction lists.
