@@ -216,20 +216,25 @@ def cnf_do(f):
             return f
         if len(f[1]) == 1:
             return cnf_do(f[1][0])
-        return cnf_distribute(cnf_do(f[1][0]), cnf_do(('or', f[1][1:])))
-    raise ValueError('unknown operator:', f[0])
+        else:
+            return cnf_distribute(cnf_do(f[1][0]), cnf_do(('or', f[1][1:])))
+    else:
+        raise ValueError('unknown operator:', f[0])
 
 # Helper function for cnf(): distribute disjunction over conjunction.
 def cnf_distribute(f1, f2):
     if f1[0] == 'and':
         if len(f1[1]) == 0:
             return f1
-        return ('and', [cnf_distribute(g, f2) for g in f1[1]])
+        else:
+            return ('and', [cnf_distribute(g, f2) for g in f1[1]])
     if f2[0] == 'and':
         if len(f2[1]) == 0:
             return f2
-        return ('and', [cnf_distribute(f1, g) for g in f2[1]])
-    return ('or', [f1, f2])
+        else:
+            return ('and', [cnf_distribute(f1, g) for g in f2[1]])
+    else:
+        return ('or', [f1, f2])
 
 # Helper function for cnf(): collapse conjunction lists and disjunction lists.
 def cnf_flatten(f):
@@ -237,7 +242,8 @@ def cnf_flatten(f):
         return ('and', cnf_flatten_conj(f[1]))
     if f[0] == 'or':
         return ('or', cnf_flatten_disj(f[1]))
-    return f
+    else:
+        return f
 
 # Helper function for cnf_flatten().
 def cnf_flatten_conj(flist):
@@ -245,7 +251,8 @@ def cnf_flatten_conj(flist):
         return flist
     if flist[0][0] == 'and':
         return cnf_flatten_conj(flist[0][1] + flist[1:])
-    return [cnf_flatten(flist[0])] + cnf_flatten_conj(flist[1:])
+    else:
+        return [cnf_flatten(flist[0])] + cnf_flatten_conj(flist[1:])
 
 # Helper function for cnf_flatten().
 def cnf_flatten_disj(flist):
@@ -253,7 +260,8 @@ def cnf_flatten_disj(flist):
         return flist
     if flist[0][0] == 'or':
         return cnf_flatten_disj(flist[0][1] + flist[1:])
-    return [flist[0]] + cnf_flatten_disj(flist[1:])
+    else:
+        return [flist[0]] + cnf_flatten_disj(flist[1:])
 
 # Helper function for cnf(): remove duplicate disjuncts and conjuncts.
 def cnf_remove_dups(f):
@@ -266,7 +274,8 @@ def cnf_remove_dups(f):
         return ('and', cnj)
     if f[0] == 'or':
         return ('or', list(set(f[1])))
-    return f
+    else:
+        return f
 
 # Uses the truth table method to compute disjunctive normal form
 def dnf_tt(f):
