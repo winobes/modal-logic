@@ -1,5 +1,5 @@
 def atom(f):
-    return f[0] in {'p','q','r','s'}
+    return len(f) == 1 
 
 # Convert a formula to a string.
 def fml_to_str(f):
@@ -40,11 +40,11 @@ def random_fml(flen = (2, 8), n_atoms = 4):
     if flen[0] < 1 or flen[0] >= flen[1]:
         raise ValueError('invalid range')
 
-    default_atoms = ['p', 'q', 'r', 's']
+    default_atoms = [(p,) for p in 'pqrs']
     if n_atoms <= 4:
         atoms = default_atoms[:n_atoms]
     else:
-        atoms = ['p' + str(i) for i in range(n_atoms)]
+        atoms = [('p' + str(i),) for i in range(n_atoms)]
     operators = ('not', 'and', 'or', 'arrow')
 
     flen = randrange(*flen)
@@ -76,9 +76,9 @@ def random_fml(flen = (2, 8), n_atoms = 4):
 # letters to truth values.
 def evaluate(f, val):
     if atom(f):
-        if not f in val:
-            raise ValueError('atom not in valuation:', f)
-        return val[f]
+        if not f[0] in val:
+            raise ValueError('atom not in valuation:', f[0])
+        return val[f[0]]
     if f[0] == 'not':
         return not evaluate(f[1], val)
     if f[0] == 'and':
@@ -91,20 +91,20 @@ def evaluate(f, val):
 
 # Returns True if f evaluates to False for every possible valuation.
 def is_contr(f):
-    atoms = get_atoms(f)
+    atoms = get_atom_names(f)
     truth_table = gen_tt(atoms)
     return all(not evaluate(f, val) for val in truth_table)
 
 # Returns True if f evaluates to True for every possible valuation.
 def is_valid(f):
-    atoms = get_atoms(f)
+    atoms = get_atom_names(f)
     truth_table = gen_tt(atoms)
     return all(evaluate(f, val) for val in truth_table)
 
 # Returns True if f and g have the same truth value 
 # for every possible valuation.
 def are_equiv(f, g):
-    atoms = get_atoms(f) | get_atoms(g)    
+    atoms = get_atom_names(f) | get_atom_names(g)    
     truth_table = gen_tt(atoms)
     return  all(evaluate(f, val) == evaluate(g, val))
 
@@ -112,7 +112,7 @@ def are_equiv(f, g):
 # that is true only at the rows in the truth table where all the premices are 
 # true.
 def strngst_impcl(sigma):
-    atoms = set.union(*[get_atoms(f) for f in sigma])
+    atoms = set.union(*[get_atom_names(f) for f in sigma])
     rows = [t for t in gen_tt(atoms) if 
             all(evaluate(f, t) for f in sigma)]
     phi = tuple(['or', [ tuple(['and', [p if row[p] == True else ('not', p) 
@@ -130,7 +130,7 @@ def gen_tt(atoms):
 # prints all possible rows WRT the atoms in sigma.
 def tt_to_str(tt, *sigma):
     if tt == None: 
-        tt = gen_tt(set.union(*[get_atoms(phi) for phi in sigma]))
+        tt = gen_tt(set.union(*[get_atom_names(phi) for phi in sigma]))
     atoms = list(tt[0].keys())
     atoms.sort()
     string = ''.join([p + '     ' for p in atoms])  + '   '
@@ -142,19 +142,19 @@ def tt_to_str(tt, *sigma):
     
 # Returns True if f evaluates to False for every possible valuation.
 def is_contr(f):
-    atoms = get_atoms(f)
+    atoms = get_atom_names(f)
     truth_table = gen_tt(atoms)
     return all(not evaluate(f, val) for val in truth_table)
 
 # Returns True if f evaluates to True for every possible valuation.
 def is_valid(f):
-    atoms = get_atoms(f)
+    atoms = get_atom_names(f)
     truth_table = gen_tt(atoms)
     return all(evaluate(f, val) for val in truth_table)
 
 # Returns True if f and g have the same truth value for every possible valuation.
 def are_equiv(f, g):
-    atoms = get_atoms(f) | get_atoms(g)    
+    atoms = get_atom_names(f) | get_atom_names(g)    
     truth_table = gen_tt(atoms)
     return  all(evaluate(f, val) == evaluate(g, val) for val in truth_table)
 
@@ -279,52 +279,52 @@ def cnf_remove_dups(f):
 
 # Uses the truth table method to compute disjunctive normal form
 def dnf_tt(f):
-    f_true_tt = [row for row in gen_tt(get_atoms(f)) 
+    f_true_tt = [row for row in gen_tt(get_atom_names(f)) 
                  if evaluate(f, row) == True]
     return tuple(['or', [tuple(['and', [p if row[p] else tuple(['not', p]) for p in row.keys() ]]) for row in f_true_tt] ])
 
 # Uses the truth table method to compute conjunctive normal form
 def cnf_tt(f):
-    f_false_tt = [row for row in gen_tt(get_atoms(f)) 
+    f_false_tt = [row for row in gen_tt(get_atom_names(f)) 
                  if evaluate(f, row) == False]
     return tuple(['and', [tuple(['or', [p if not row[p] else tuple(['not', p]) 
                  for p in row.keys() ]]) for row in f_false_tt] ])
 
 # Returns the set of propositions in f.
-def get_atoms(f):
+def get_atom_names(f):
     if atom(f):
-        return {f}
+        return {f[0]}
     if f[0] == 'not':
-        return get_atoms(f[1])
+        return get_atom_names(f[1])
     if f[0] == 'arrow':
-        return get_atoms(f[1]) | get_atoms(f[2])
+        return get_atom_names(f[1]) | get_atom_names(f[2])
     if f[0] == 'or' or f[0] == 'and':
-        return set().union(*[get_atoms(g) for g in f[1]]) 
+        return set().union(*[get_atom_names(g) for g in f[1]]) 
     raise ValueError('unknown operator:', f[0]) 
 
 # Returns True if f evaluates to False for every possible valuation.
 def is_contr(f):
-    atoms = get_atoms(f)
+    atoms = get_atom_names(f)
     truth_table = gen_tt(atoms)
     return all(not evaluate(f, val) for val in truth_table)
 
 # Returns True if f evaluates to True for every possible valuation.
 def is_valid(f):
-    atoms = get_atoms(f)
+    atoms = get_atom_names(f)
     truth_table = gen_tt(atoms)
     return all(evaluate(f, val) for val in truth_table)
 
 # Returns True if phi is true at every line in the truth table where all
 # the formulas in sigma are true.
 def proves(sigma, phi):
-    atoms = set.union(*[get_atoms(psi) for psi in sigma]) | get_atoms(phi)
+    atoms = set.union(*[get_atom_names(psi) for psi in sigma]) | get_atom_names(phi)
     all_sigma_tt = [row for row in gen_tt(atoms) if 
         all(evaluate(psi, row) for psi in sigma)]
     return all(evaluate(phi, row) for row in all_sigma_tt)
 
 # Returns True if f and g have the same truth value for every possible valuation.
 def are_equiv(f, g):
-    atoms = get_atoms(f) | get_atoms(g)    
+    atoms = get_atom_names(f) | get_atom_names(g)    
     truth_table = gen_tt(atoms)
     return  all(evaluate(f, val) == evaluate(g, val) for val in truth_table)
 
