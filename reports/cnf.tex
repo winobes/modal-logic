@@ -342,12 +342,14 @@ def cnf(f):
 
 \section{The Semantic Algorithm}
 
-Rather than converting $f$ to CNF directly, the $cnf\_tt$ algorithm
+Rather than converting $f$ to CNF directly, the semantic algorithm
         constructs a truth table and uses it to produce a formula in CNF
         that is logically equivalent to $f$ (i.e. it is true at exactly
         the rows where $f$ is true). 
-It is more intuitive to use this strategy to produce a formula
-        in DNF.
+An analogous and more intuitive strategy exists to produce a formula in DNF.
+For example, suppose one would like to transform the formula
+$(p \lor q \to q) \to r$ into DNF.
+Consider the truth table of this formula:
 
 \begin{displaymath}
 \begin{array}{|c|c|c|c}
@@ -368,13 +370,14 @@ It is more intuitive to use this strategy to produce a formula
 \end{array}
 \end{displaymath}
 
+\noindent
 To write a formula that is true at exactly one row in a truth table
         (i.e. it is true there and nowhere else), one 
-        takes the conjunction of all the literals or their negations depending
+        takes the conjunction of all the atoms or their negations depending
         on their truth or falsity at that row.
 For example, the formula $\land [\lnot p, q, r]$ is true at exactly row $4$ in
         the truth table above.
-Reading a DNF formula from a truth table is an extension of this idea:
+Constructing a DNF formula from a truth table is an extension of this idea:
         just take the disjunction of such formulas for each row where $f$
         is true.
 The resulting formula is in DNF and is true at exactly the lines where $f$
@@ -390,7 +393,9 @@ Thus we have:
 \land[p,q,r]
      ]
 \]
-        
+
+The Python implementation is as follows.
+
 \begin{minted}[frame=single]{python}
 # Uses the truth table method to compute disjunctive normal form
 def dnf_tt(f):
@@ -405,7 +410,8 @@ def dnf_tt(f):
         for row in f_true_tt] ])
 \end{minted}
 
-To read the CNF from the truth table, we take the opposite (but obviously
+To construct a CNF formula from the truth table, we take the opposite (but
+	obviously
         logically equivalent) approach: the goal is to write a formula
         that is false at exactly the lines where $f$ is false. 
 Say we wanted to write a formula that is false at exactly line $3$.
@@ -439,9 +445,9 @@ def cnf_tt(f):
 
 \section{Analysis}
 
-The $cnf\_tt$ algorithm has a higher up-front cost than $cnf$.
-The cost of generating the empty truth table is relatively small; 
-It is a list of the $2^n$ possible valuations (where $n$ is the
+The semantic algorithm has a higher up-front cost than the syntactic one.
+The cost of generating the empty truth table is relatively small:
+it is a list of the $2^n$ possible valuations (where $n$ is the
         number of atomic propositions):
 \begin{minted}[frame=single]{python}
 # Generates all possible valuations for a given set of atoms.     
@@ -454,14 +460,16 @@ Filtering the truth table to only the rows where $f$ is $False$ is rather
         intensive since the formula must be evaluated at each of the
         $2^n$ rows and the evaluation function may be called up to once
         for each subformula of $f$.
-Nevertheless, $cnf\_tt$ performs better on longer random formulas, especially 
+Nevertheless, the semantic algorithm performs better on longer random formulas,
+	especially 
         where total number of propositions greatly exceeds the total number of
         unique propositions. 
 
-Below: time difference ($cnf$ minus $cnf\_tt$) in converting $5000$ random formulas
-        to CNF.
-The $x$ axis ranges over the number of unique propositions, and the $y$ axis 
-        is the total number of propositions in the formula.\\
+The following table lists the time differences (the execution time of the
+syntactic algorithm minus that of the semantic one) when converting 5000 random
+formulas to CNF.
+The columns represent the number of unique atoms in a formula while the rows
+represent the total number of atoms occurring in that formula.
 
 \noindent
 \includegraphics[
@@ -473,14 +481,17 @@ The $x$ axis ranges over the number of unique propositions, and the $y$ axis
 \vfill
 \newpage
 
-For formulas given in DNF, $cnf\_tt$ is faster for formulas of any length 
-        sentences, and $cnf$ reaches Python's default maximum recursion depth 
+For formulas given in DNF, the semantic algorithm is faster for formulas of any
+	length,
+	and the syntactic algorithm reaches Python's default maximum
+	recursion depth 
         of $1000$ beginning at $3$ propositions.
 
-The run time of $cnf$ is agnostic to the number of unique propositions
+The run time of the syntactic algorithm is agnostic to the number of unique
+	propositions
         in the given formula since uniqueness of a proposition is primarily
         semantic notion.
-The semantic algorithm, $cnf\_tt$, is less concerned with the syntactic
+The semantic algorithm is less concerned with the syntactic
         structure of the given formula since this has less bearing on the
         construction of a truth table.
 The relative strengths of the two algorithms highlights two distinct ways that
