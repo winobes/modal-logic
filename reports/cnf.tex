@@ -18,65 +18,338 @@
 \begin{document}
 \maketitle
 
-Conjunctive normal form (CNF) is the standard notation for formulas in predicate
-        and propositional logic.
-A formula in CNF consists of a series of conjunctions containing subformulas
-        which are only disjunctions of atomic propositions or their negations.
-We use `and' and `or' as list operators.
-Thus a formula whose main connective is `and' or `or' is a pair, the operator
-        and a list of conjuncts or disjuncts.
-For this reason, a formula in CNF contains (at most) one `and' operator.
-Besides being standard notation, CNF is advantageous because it can speed up the
-        evaluation of long formulas.
-Disjunctive normal form (DNF) is the `or' analog to CNF. A formula in DNF is
-        a single `or' list of subformulas made up of `and' lists of atomic
-        formulas and their negations.
+\section{Introduction}
+
+A formula is in conjunctive normal form (CNF) if it is a conjunction of
+subformulas, each of which either is a literal (i.e. an atom or the negation of
+an atom) or a disjunction of literals.
+As a special case, a CNF formula may consist of only one conjunct, in which
+case it simply is either a literal or a disjunction of literals. 
+CNF is very useful in automatic theorem proving, because its structure allows
+for efficient formula evaluation.
+In this report we discuss and compare two algorithms to transform arbitrary
+propositional formulas into CNF.
+The first algorithm employs syntactical manipulation while the second has a
+semantical approach relying on truth tables.
+The two algorithms have been implemented in the Python programming language.
+
+\section{Formula Representation}
+
+We use tuples and lists to represent formulas in Python.
+As may be expected, tuples in Python are enclosed in round brackets while lists
+are enclosed in square brackets.
+The elements of a tuple or a list are separated by commas.
+For example, \texttt{(a, b, c)} is a tuple and \texttt{[a, b, c]} is a list.
+More specifically, a formula representation is recursively defined as follows.
+
+\begin{enumerate}
+
+\item
+If \texttt{s} is a string, then \texttt{(s,)} is a formula.
+
+\item
+If \texttt{f} is a formula, then \texttt{('not', f)} is a formula.
+
+\item
+If \texttt{f} and \texttt{g} are formulas, then \texttt{('arrow', f, g)} is a
+formula.
+
+\item
+If \texttt{f}$_1$, $\ldots$, \texttt{f}$_n$ are formulas, then \texttt{('and',
+[f$_1$, $\ldots$, f$_n$])} is a formula.
+
+\item
+If \texttt{f}$_1$, $\ldots$, \texttt{f}$_n$ are formulas, then \texttt{('or',
+[f$_1$, $\ldots$, f$_n$])} is a formula.
+\end{enumerate}
+
+\noindent
+For example, the formula $p \land \lnot q \land (r \to s)$ is represented as
+\texttt{('and', [('p',), ('not', ('q',)), ('arrow', ('r',), ('s',))])}.
 
 \section{The Syntactic Algorithm}
+
+The syntactic CNF algorithm exploits the distributivity of disjunction over
+conjunction to transform formulas into CNF.
+For example, the non-CNF formula $\phi \lor (\psi \land \chi)$ may be
+transformed into the logically equivalent CNF formula $(\phi \lor \psi) \land
+(\phi \lor \chi)$ by distributing disjunctions over conjunction.
+
+The syntactic CNF algorithm is applicable only to formulas that are in negation
+normal form (NNF).
+A formula is in NNF if only atoms are negated and the only other logical
+operators that occur in it are disjunction and conjunction.
+Therefore, in order for a formula to be transformed into CNF, it first must
+have been transformed into NNF.
+
+The NNF algorithm, in turn, is applicable only to formulas in which negation,
+disjunction and conjunction occur as the only operators.
+Hence, every implicative subformula of the form $\phi \to \psi$ must be
+transformed into an equivalent disjunction of the form $\lnot\phi \lor \psi$.
+This is done by the impl\_to\_disj() function, which may be defined as follows.
+
+\begin{enumerate}
+
+\item
+If $\phi$ is an atom, then $\mathrm{impl\_to\_disj}(\phi) = \phi$.
+
+\item
+If $\phi = \lnot\psi$, then $\mathrm{impl\_to\_disj}(\phi) =
+\lnot\mathrm{impl\_to\_disj}(\psi)$.
+
+\item
+If $\phi = \psi \to \chi$, then $\mathrm{impl\_to\_disj}(\phi) =
+\lnot\mathrm{impl\_to\_disj}(\psi) \lor \mathrm{impl\_to\_disj}(\chi)$.
+
+\item
+If $\phi = \psi_1 \land \ldots \land \psi_n$, then
+$\mathrm{impl\_to\_disj}(\phi) = \mathrm{impl\_to\_disj}(\psi_1) \land \ldots
+\land \mathrm{impl\_to\_disj}(\psi_n)$.
+
+\item
+If $\phi = \psi_1 \lor \ldots \lor \psi_n$, then
+$\mathrm{impl\_to\_disj}(\phi) = \mathrm{impl\_to\_disj}(\psi_1) \lor \ldots
+\lor \mathrm{impl\_to\_disj}(\psi_n)$.
+
+\end{enumerate}
+
+\noindent
+The Python implementation is as follows.
+
 \begin{minted}[frame=single]{python}
-# Helper function for cnf().
-def cnf_do(f):
+def impl_to_disj(f):
+    if atom(f):
+        return f
+    if f[0] == 'not':
+        return ('not', impl_to_disj(f[1]))
+    if f[0] == 'or' or f[0] == 'and':
+        return (f[0], [impl_to_disj(g) for g in f[1]])
+    if f[0] == 'arrow':
+        return ('or', [('not', impl_to_disj(f[1])), impl_to_disj(f[2])])
+    else:
+        raise ValueError('unknown operator:', f[0])
+\end{minted}
+
+\noindent
+The atom() function returns true if its tuple argument contains exactly 1
+argument and false otherwise:
+
+\begin{minted}[frame=single]{python}
+def atom(f):
+    return len(f) == 1
+\end{minted}
+
+The nnf() function may be defined as follows.
+
+\begin{enumerate}
+
+\item
+If $\phi$ is an atom, then $\mathrm{nnf}(\phi) = \phi$.
+
+\item
+If $\phi = \lnot\psi$, then:
+
+\begin{enumerate}
+
+\item
+If $\psi$ is an atom, then $\mathrm{nnf}(\phi) = \phi$.
+
+\item
+If $\psi = \lnot\chi$, then $\mathrm{nnf}(\phi) = \mathrm{nnf}(\chi)$.
+
+\item
+If $\psi = \chi_1 \land \ldots \land \chi_n$, then $\mathrm{nnf}(\phi) =
+\mathrm{nnf}(\lnot\chi_1) \lor \ldots \lor \mathrm{nnf}(\lnot\chi_n)$.
+
+\item
+If $\psi = \chi_1 \lor \ldots \lor \chi_n$, then $\mathrm{nnf}(\phi) =
+\mathrm{nnf}(\lnot\chi_1) \land \ldots \land \mathrm{nnf}(\lnot\chi_n)$.
+
+\end{enumerate}
+
+\item
+If $\phi = \psi_1 \land \ldots \land \psi_n$, then $\mathrm{nnf}(\phi) =
+\mathrm{nnf}(\psi_1) \land \ldots \land \mathrm{nnf}(\psi_n)$.
+
+\item
+If $\phi = \psi_1 \lor \ldots \lor \psi_n$, then $\mathrm{nnf}(\phi) =
+\mathrm{nnf}(\psi_1) \lor \ldots \lor \mathrm{nnf}(\psi_n)$.
+
+\end{enumerate}
+
+\noindent
+The Python implementation is as follows.
+
+\begin{minted}[frame=single]{python}
+def nnf(f):
+    return nnf_do(impl_to_disj(f))
+
+def nnf_do(f):
+    if atom(f):
+        return f
+    if f[0] == 'not':
+        if atom(f[1]):
+            return f
+        if f[1][0] == 'not':
+            return nnf_do(f[1][1])
+        if f[1][0] == 'and':
+            return ('or', [nnf_do(('not', g)) for g in f[1][1]])
+        if f[1][0] == 'or':
+            return ('and', [nnf_do(('not', g)) for g in f[1][1]])
+        else:
+            raise ValueError('unexpected operator:', f[1][0])
+    if f[0] == 'and' or f[0] == 'or':
+        return (f[0], [nnf_do(g) for g in f[1]])
+    else:
+        raise ValueError('unexpected operator:', f[0])
+\end{minted}
+
+The $\mathrm{cnf}()$ function is defined as follows.
+
+\begin{enumerate}
+
+\item
+If $\phi$ is a literal, then $\mathrm{cnf}(\phi) = \phi$.
+
+\item
+If $\phi = \psi_1 \land \ldots \land \psi_n$, then $\mathrm{cnf}(\phi) =
+\mathrm{cnf}(\psi_1) \land \ldots \land \mathrm{cnf}(\psi_n)$.
+
+\item
+If $\phi = \psi_1 \lor \ldots \lor \psi_n$, then $\mathrm{cnf}(\phi) =
+\mathrm{dist}(\mathrm{cnf}(\psi_1), \mathrm{cnf}(\psi_2 \lor \ldots \lor
+\psi_n))$.
+
+\end{enumerate}
+
+\noindent
+The $\mathrm{dist}()$ function performs the disjunction distribution and is
+defined as follows.
+
+\begin{enumerate}
+
+\item
+If $\phi = \chi_1 \land \ldots \land \chi_n$, then $\mathrm{dist}(\phi, \psi) =
+\mathrm{dist}(\chi_1, \psi) \land \ldots \land \mathrm{dist}(\chi_n, \psi)$.
+
+\item
+If $\psi = \chi_1 \land \ldots \land \chi_n$, then $\mathrm{dist}(\phi, \psi) =
+\mathrm{dist}(\phi, \chi_1) \land \ldots \land \mathrm{dist}(\phi, \chi_n)$.
+
+\item
+Otherwise, $\mathrm{dist}(\phi, \psi) = \phi \lor \psi$.
+
+\end{enumerate}
+
+\noindent
+The algorithm may be described as follows.
+It starts at the deepest nested conjunctions and, if necessary, applies the
+distribution rule.
+This moves the original conjunctions up one level in the formula.
+At this level distribution is applied again, if necessary.
+This process is continued until all conjunctions have been pushed up above any
+disjunction.
+
+The Python implementation of $\mathrm{cnf}()$ and $\mathrm{dist}()$ is as
+follows.
+
+\begin{minted}[frame=single]{python}
+def cnf(f):
     if atom(f) or f[0] == 'not':
         return f
     if f[0] == 'and':
-        return ('and', [cnf_do(g) for g in f[1]])
+        return ('and', [cnf(g) for g in f[1]])
     if f[0] == 'or':
         if len(f[1]) == 0:
             return f
         if len(f[1]) == 1:
-            return cnf_do(f[1][0])
-        return cnf_distribute(cnf_do(f[1][0]), cnf_do(('or', f[1][1:])))
-    raise ValueError('unknown operator:', f[0])
+            return cnf(f[1][0])
+        else:
+            return dist(cnf(f[1][0]), cnf(('or', f[1][1:])))
+    else:
+        raise ValueError('unknown operator:', f[0])
+
+def dist(f, g):
+    if f[0] == 'and':
+        if len(f[1]) == 0:
+            return f
+        else:
+            return ('and', [dist(h, g) for h in f[1]])
+    if g[0] == 'and':
+        if len(g[1]) == 0:
+            return g
+        else:
+            return ('and', [dist(f, h) for h in g[1]])
+    else:
+        return ('or', [f, g])
 \end{minted}
 
+After a formula has been transformed into CNF, it may contain nested lists of
+conjunctions and disjunctions.
+These lists are flattened or collapsed by the flatten() function.
+As a final step, the remove\_dups() function removes from every disjunction
+list duplicate disjuncts and likewise for the conjunction list.
+
+The Python implementation for these functions is as follows.
+
 \begin{minted}[frame=single]{python}
-# Helper function for cnf(): distribute disjunction over conjunction.
-def cnf_distribute(f1, f2):
-    if f1[0] == 'and':
-        if len(f1[1]) == 0:
-            return f1
-        if len(f1[1]) == 1:
-            return cnf_distribute(f1[1][0], f2)
-        return ('and', [cnf_distribute(f1[1][0], f2)] +
-            [cnf_distribute(g, f2) for g in f1[1][1:]])
-    if f2[0] == 'and':
-        if len(f2[1]) == 0:
-            return f2
-        if len(f2[1]) == 1:
-            return cnf_distribute(f1, f2[1][0])
-        return ('and', [cnf_distribute(f1, f2[1][0])] +
-            [cnf_distribute(f1, g) for g in f2[1][1:]])
-    return ('or', [f1, f2])
+def flatten(f):
+    if f[0] == 'and':
+        return ('and', flatten_conj(f[1]))
+    if f[0] == 'or':
+        return ('or', flatten_disj(f[1]))
+    else:
+        return f
+
+def flatten_conj(flist):
+    if flist == []:
+        return flist
+    if flist[0][0] == 'and':
+        return flatten_conj(flist[0][1] + flist[1:])
+    else:
+        return [flatten(flist[0])] + flatten_conj(flist[1:])
+
+def flatten_disj(flist):
+    if flist == []:
+        return flist
+    if flist[0][0] == 'or':
+        return flatten_disj(flist[0][1] + flist[1:])
+    else:
+        return [flist[0]] + flatten_disj(flist[1:])
+
+def remove_dups(f):
+    if f[0] == 'and':
+        flist = []
+        for g in f[1]:
+            g = remove_dups(g)
+            if not g in flist:
+                flist.append(g)
+        return ('and', flist)
+    if f[0] == 'or':
+        return ('or', list(set(f[1])))
+    else:
+        return f
+\end{minted}
+
+\noindent
+To incorporate these functions into the function chain, the original cnf()
+function is renamed to cnf\_do() and the new cnf() function is as follows.
+
+\begin{minted}[frame=single]{python}
+def cnf(f):
+    return remove_dups(flatten(cnf_do(nnf(f))))
 \end{minted}
 
 \section{The Semantic Algorithm}
 
-Rather than converting $f$ to CNF directly, the $cnf\_tt$ algorithm
+Rather than converting $f$ to CNF directly, the semantic algorithm
         constructs a truth table and uses it to produce a formula in CNF
         that is logically equivalent to $f$ (i.e. it is true at exactly
         the rows where $f$ is true). 
-It is more intuitive to use this strategy to produce a formula
-        in DNF.
+An analogous and more intuitive strategy exists to produce a formula in DNF.
+For example, suppose one would like to transform the formula
+$(p \lor q \to q) \to r$ into DNF.
+Consider the truth table of this formula:
 
 \begin{displaymath}
 \begin{array}{|c|c|c|c}
@@ -97,13 +370,14 @@ It is more intuitive to use this strategy to produce a formula
 \end{array}
 \end{displaymath}
 
+\noindent
 To write a formula that is true at exactly one row in a truth table
         (i.e. it is true there and nowhere else), one 
-        takes the conjunction of all the literals or their negations depending
+        takes the conjunction of all the atoms or their negations depending
         on their truth or falsity at that row.
 For example, the formula $\land [\lnot p, q, r]$ is true at exactly row $4$ in
         the truth table above.
-Reading a DNF formula from a truth table is an extension of this idea:
+Constructing a DNF formula from a truth table is an extension of this idea:
         just take the disjunction of such formulas for each row where $f$
         is true.
 The resulting formula is in DNF and is true at exactly the lines where $f$
@@ -119,7 +393,9 @@ Thus we have:
 \land[p,q,r]
      ]
 \]
-        
+
+The Python implementation is as follows.
+
 \begin{minted}[frame=single]{python}
 # Uses the truth table method to compute disjunctive normal form
 def dnf_tt(f):
@@ -134,7 +410,8 @@ def dnf_tt(f):
         for row in f_true_tt] ])
 \end{minted}
 
-To read the CNF from the truth table, we take the opposite (but obviously
+To construct a CNF formula from the truth table, we take the opposite (but
+	obviously
         logically equivalent) approach: the goal is to write a formula
         that is false at exactly the lines where $f$ is false. 
 Say we wanted to write a formula that is false at exactly line $3$.
@@ -168,9 +445,9 @@ def cnf_tt(f):
 
 \section{Analysis}
 
-The $cnf\_tt$ algorithm has a higher up-front cost than $cnf$.
-The cost of generating the empty truth table is relatively small; 
-It is a list of the $2^n$ possible valuations (where $n$ is the
+The semantic algorithm has a higher up-front cost than the syntactic one.
+The cost of generating the empty truth table is relatively small:
+it is a list of the $2^n$ possible valuations (where $n$ is the
         number of atomic propositions):
 \begin{minted}[frame=single]{python}
 # Generates all possible valuations for a given set of atoms.     
@@ -183,14 +460,16 @@ Filtering the truth table to only the rows where $f$ is $False$ is rather
         intensive since the formula must be evaluated at each of the
         $2^n$ rows and the evaluation function may be called up to once
         for each subformula of $f$.
-Nevertheless, $cnf\_tt$ performs better on longer random formulas, especially 
+Nevertheless, the semantic algorithm performs better on longer random formulas,
+	especially 
         where total number of propositions greatly exceeds the total number of
         unique propositions. 
 
-Below: time difference ($cnf$ minus $cnf\_tt$) in converting $5000$ random formulas
-        to CNF.
-The $x$ axis ranges over the number of unique propositions, and the $y$ axis 
-        is the total number of propositions in the formula.\\
+The following table lists the time differences (the execution time of the
+syntactic algorithm minus that of the semantic one) when converting 5000 random
+formulas to CNF.
+The columns represent the number of unique atoms in a formula while the rows
+represent the total number of atoms occurring in that formula.
 
 \noindent
 \includegraphics[
@@ -202,14 +481,17 @@ The $x$ axis ranges over the number of unique propositions, and the $y$ axis
 \vfill
 \newpage
 
-For formulas given in DNF, $cnf\_tt$ is faster for formulas of any length 
-        sentences, and $cnf$ reaches Python's default maximum recursion depth 
+For formulas given in DNF, the semantic algorithm is faster for formulas of any
+	length,
+	and the syntactic algorithm reaches Python's default maximum
+	recursion depth 
         of $1000$ beginning at $3$ propositions.
 
-The run time of $cnf$ is agnostic to the number of unique propositions
+The run time of the syntactic algorithm is agnostic to the number of unique
+	propositions
         in the given formula since uniqueness of a proposition is primarily
         semantic notion.
-The semantic algorithm, $cnf\_tt$, is less concerned with the syntactic
+The semantic algorithm is less concerned with the syntactic
         structure of the given formula since this has less bearing on the
         construction of a truth table.
 The relative strengths of the two algorithms highlights two distinct ways that
