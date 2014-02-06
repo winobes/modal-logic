@@ -1,6 +1,9 @@
 def atom(f):
     return len(f) == 1 
 
+def literal(f):
+    return atom(f) or (f[0] == 'not' and atom(f[1]))
+
 # Convert a formula to a string.
 def fml_to_str(f):
     if atom(f):
@@ -385,3 +388,101 @@ def parse(fml_str):
         elif operator[0] == 'V':
             fml = tuple(['or', [parse("".join(s)) for s in partition if not s == ['V'] ] ])
     return fml 
+#
+#def get_clauses(cnf_formula):
+    #pass
+#
+#def dpll(clauses):
+    #if const_literals(clauses):
+        #return True
+    #if [] in clauses:
+        #return False
+    #for c in clauses: if len(c) == 1:
+        #clauses = unit_propagate(c, clauses)
+#
+#
+def fml_to_clauses(f):
+    if atom(f) or f[0] == 'not':
+        return [[f]]
+    if f[0] == 'or': 
+        return [f[1]]
+    if f[0] == 'and':
+        return [fml_to_clauses(x)[0] for x in f[1]]
+
+def resolve_eval_lit(lit, asgmt):
+    if atom(lit):
+        if not lit[0] in asgmt:
+            raise ValueError ("literal not in assignment")
+        else:
+            return asgmt[lit[0]]
+    if lit[0] == 'not':
+        value = resolve_eval_lit(lit[1], asgmt)
+        if value == None:
+            return None 
+        else:
+            return not value
+    else:
+        raise ValueError ("not a literal:", lit)
+
+def resolve(f):
+    asgmt = {atom_name: None for atom_name in get_atom_names(f)}
+    clauses = fml_to_clauses(f)
+    return resolve_do(clauses, asgmt)
+
+def resolve_do(clauses, asgmt):
+    while True:
+        new_clauses = resolve_simplify(clauses, asgmt)
+        if any(clause == [] for clause in new_clauses):
+            return False 
+        if new_clauses == []:
+            return True
+        if not resolve_consistent_unit_clauses(clauses):
+            return False 
+        new_asgmt = resolve_assign_unit_clauses(clauses, asgmt)
+        if new_clauses == clauses and new_asgmt == asgmt:
+            break   
+        else:
+            clauses = new_clauses
+            asgmt = new_asgmt
+    lit = clauses[0][0]
+    if atom(lit):
+        atom_name = lit[0]
+    else:
+        atom_name = lit[1][0]
+    atom_false = asgmt.copy()
+    atom_false.update({atom_name: False})
+    atom_true = asgmt.copy()
+    atom_true.update({atom_name: True})
+    return (resolve_do(clauses, atom_false)
+        or resolve_do(clauses, atom_true))
+
+def resolve_assign_unit_clauses(clauses, asgmt):
+    new_asgmt = asgmt.copy() 
+    for clause in clauses:
+        if len(clause) == 1:
+            if atom(clause[0]):
+                new_asgmt[clause[0][0]] = True
+            else:
+                new_asgmt[clause[0][1][0]] = False
+    return new_asgmt
+
+def resolve_consistent_unit_clauses(clauses):
+    return not any([len(c) == 1 and [('not', c[0])] in clauses for c in clauses])
+
+def resolve_simplify(clauses, asgmt):
+    for clause in clauses[:]:
+        if any(resolve_eval_lit(lit, asgmt) for lit in clause):
+            clauses.remove(clause) 
+            continue
+        for lit in clause[:]:
+            if resolve_eval_lit(lit, asgmt) == False:
+                clause.remove(lit)    
+    return clauses
+                
+def clauses_to_str(clauses):
+    s = ""
+    for clause in clauses:
+        for lit in clause:
+            s += fml_to_str(lit) + ", "
+        s += '\n'
+    return s

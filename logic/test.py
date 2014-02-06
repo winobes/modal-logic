@@ -249,4 +249,16 @@ def cnf_report_3():
                                 quotechar='"', quoting=csv.QUOTE_MINIMAL)
         for row in report: reportwriter.writerow(row)
 
-test6()
+res_test_sigma = [prop.cnf(prop.random_fml((1,8))) for i in range(10000)]
+def run_resolve(sigma):
+    for f in sigma:
+        prop.resolve(f)
+
+def test7():
+    import timeit
+    import cProfile
+
+    print(cProfile.run('run_resolve(res_test_sigma)'))
+
+test7()
+    
