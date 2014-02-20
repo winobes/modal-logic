@@ -486,3 +486,37 @@ def clauses_to_str(clauses):
             s += fml_to_str(lit) + ", "
         s += '\n'
     return s
+
+def tableau(f):
+    return tableau_do([[cnf(('not', f))]])
+
+def tableau_do(tab):
+    new_tab = [] 
+    for branch in tab:
+        new_branches = tableau_expand(branch)
+        for branch in new_branches:
+            if not tableau_branch_closed(branch):
+                new_tab.append(branch) 
+    if new_tab == tab:
+        return False 
+    elif new_tab == []:
+        return True
+    else: 
+        return tableau_do(new_tab)
+                 
+def tableau_expand(branch):
+    for f in branch:
+        if   f[0] == 'and':
+            branch.remove(f)
+            for g in f[1]: branch.append(g)
+            return [branch]
+        elif f[0] == 'or':
+            branch.remove(f)
+            return [branch + [g] for g in f[1]] 
+    return [branch]
+
+def tableau_branch_closed(branch):
+    atoms = {f for f in branch if atom(f)}
+    negations = {g[1] for g in branch if g[0] == 'not'}
+    return any(f == g for f in atoms for g in negations)
+
