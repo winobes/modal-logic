@@ -584,3 +584,138 @@ def term_to_str(term):
                 s += term_to_str(t) + ', '
             s = s[:-2] + ')'
             return s
+
+# Convert each implicative subformula to a disjunctive one.
+def impl_to_disj(f):
+    if pred(f):
+        return f
+    if f[0] == 'not':
+        return ('not', impl_to_disj(f[1]))
+    if f[0] == 'or' or f[0] == 'and':
+        return (f[0], [impl_to_disj(g) for g in f[1]])
+    if f[0] == 'arrow':
+        return ('or', [('not', impl_to_disj(f[1])), impl_to_disj(f[2])])
+    if f[0] == 'all' or f[0] == 'exists':
+        return (f[0], f[1], impl_to_disj(f[2]))
+    raise ValueError('unknown operator:', f[0])
+
+# Convert to negation normal form.
+def nnf(f):
+    return nnf_do(impl_to_disj(f))
+
+# Helper function for nnf().
+def nnf_do(f):
+    if pred(f):
+        return f
+    elif f[0] == 'not':
+        if pred(f[1]):
+            return f
+        elif f[1][0] == 'not':
+            return nnf_do(f[1][1])
+        elif f[1][0] == 'and':
+            return ('or', [nnf_do(('not', g)) for g in f[1][1]])
+        elif f[1][0] == 'or':
+            return ('and', [nnf_do(('not', g)) for g in f[1][1]])
+        elif f[1][0] == 'all':
+            return ('exists', f[1][1], nnf_do(('not', f[1][2])))
+        elif f[1][0] == 'exists':
+            return ('all', f[1][1], nnf_do(('not', f[1][2])))
+        else:
+            raise ValueError('unknown operator:', f[1][0])
+    elif f[0] == 'and' or f[0] == 'or':
+        return (f[0], [nnf_do(g) for g in f[1]])
+    elif f[0] == 'all' or f[0] == 'exists':
+        return (f[0], f[1], nnf_do(f[2]))
+    raise ValueError('unexpected operator:', f[0])
+
+# Remove all universal quantifiers.
+def remove_universals(f):
+    if pred(f):
+        return f
+    if f[0] == 'not':
+        return ('not', remove_universals(f[1]))
+    if f[0] == 'and' or f[0] == 'or':
+        return (f[0], [remove_universals(g) for g in f[1]])
+    if f[0] == 'all':
+        return remove_universals(f[2])
+
+# Convert to conjunctive normal form.
+def cnf(f):
+    return cnf_remove_dups(cnf_flatten(cnf_do(remove_universals(skolemize(safe(
+        nnf(f)))))))
+
+# Helper function for cnf().
+def cnf_do(f):
+    if pred(f) or f[0] == 'not':
+        return f
+    if f[0] == 'and':
+        return ('and', [cnf_do(g) for g in f[1]])
+    if f[0] == 'or':
+        if len(f[1]) == 0:
+            return f
+        if len(f[1]) == 1:
+            return cnf_do(f[1][0])
+        else:
+            return cnf_distribute(cnf_do(f[1][0]), cnf_do(('or', f[1][1:])))
+    else:
+        raise ValueError('unknown operator:', f[0])
+
+# Helper function for cnf(): distribute disjunction over conjunction.
+def cnf_distribute(f1, f2):
+    if f1[0] == 'and':
+        if len(f1[1]) == 0:
+            return f1
+        else:
+            return ('and', [cnf_distribute(g, f2) for g in f1[1]])
+    if f2[0] == 'and':
+        if len(f2[1]) == 0:
+            return f2
+        else:
+            return ('and', [cnf_distribute(f1, g) for g in f2[1]])
+    else:
+        return ('or', [f1, f2])
+
+# Helper function for cnf(): collapse conjunction lists and disjunction lists.
+def cnf_flatten(f):
+    if f[0] == 'and':
+        return ('and', cnf_flatten_conj(f[1]))
+    if f[0] == 'or':
+        return ('or', cnf_flatten_disj(f[1]))
+    else:
+        return f
+
+# Helper function for cnf_flatten().
+def cnf_flatten_conj(flist):
+    if flist == []:
+        return flist
+    if flist[0][0] == 'and':
+        return cnf_flatten_conj(flist[0][1] + flist[1:])
+    else:
+        return [cnf_flatten(flist[0])] + cnf_flatten_conj(flist[1:])
+
+# Helper function for cnf_flatten().
+def cnf_flatten_disj(flist):
+    if flist == []:
+        return flist
+    if flist[0][0] == 'or':
+        return cnf_flatten_disj(flist[0][1] + flist[1:])
+    else:
+        return [flist[0]] + cnf_flatten_disj(flist[1:])
+
+# Helper function for cnf(): remove duplicate disjuncts and conjuncts.
+def cnf_remove_dups(f):
+    if f[0] == 'and':
+        cnj = []
+        for g in f[1]:
+            g = cnf_remove_dups(g)
+            if not g in cnj:
+                cnj.append(g)
+        return ('and', cnj)
+    if f[0] == 'or':
+        dsj = []
+        for g in f[1]:
+            if not g in dsj:
+                dsj.append(g)
+        return ('or', dsj)
+    else:
+        return f
