@@ -424,9 +424,9 @@ def skolemize_do(f, funcs, univars):
         g = f[2]
         for v in f[1]:
             i = 0
-            while 'a' + str(i) in funcs:
+            while 'f' + str(i) in funcs:
                 i += 1
-            func = 'a' + str(i)
+            func = 'f' + str(i)
             g = skolemize_replace(g, v, (func, univars))
             funcs.append(func)
         return skolemize_do(g, funcs, univars)
