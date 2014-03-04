@@ -749,6 +749,15 @@ def tableau_expand(branch):
     return [branch]
 
 def tableau_branch_closed(branch):
-    atoms = [f for f in branch if pred(f)]
-    negations = [g[1] for g in branch if g[0] == 'not']
-    return any(f == g for f in atoms for g in negations)
+    positives = [f for f in branch if pred(f)]
+    negatives = [f for f in branch if f[0] == 'not']
+    
+    for f in positives:
+        for g in negatives:
+            if f[0] == g[1][0]:
+                s = unify_termlists(f[1], g[1][1])
+                if s != None:
+                    print('%s and %s unified by %s' % (fml_to_str(f),
+                        fml_to_str(g), subst_to_str(s)))
+                    return True
+    return False
