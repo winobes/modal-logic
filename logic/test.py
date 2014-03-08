@@ -1,5 +1,14 @@
 import prop, pred
 
+def benchmark_prover(prover, fmls):
+    import cProfile
+    cProfile.runctx('for f in fmls: prover(f)', globals(), locals())
+
+def benchmark_provers(provers, fmls):
+    for prover in provers:
+        print('%s:\n' % prover.__name__)
+        benchmark_prover(prover, fmls)
+
 def test_prover(prover, fml_to_str, tests):
     for test in tests:
         fml = test[0]
@@ -302,6 +311,21 @@ def test_prop_tableaux():
     print('prop.tableau_dnf():')
     test_prover(prop.tableau_dnf, prop.fml_to_str, tests)
 
+def benchmark_prop_tableaux():
+    provers = [prop.tableau, prop.tableau_dnf]
+    nfmls = 200
+
+    fmls = [prop.random_fml((16, 17)) for i in range(nfmls)]
+    print('proving random formulas')
+    print('-----------------------\n')
+    benchmark_provers(provers, fmls)
+
+    f = prop.random_fml((16, 17))
+    fmls = [('or', [f, ('not', f)]) for i in range(nfmls)]
+    print('proving a complex f V ~f')
+    print('------------------------\n')
+    benchmark_provers(provers, fmls)
+
 def test_pred_tableaux():
     sigma = [pred.random_fml((2, 4)) for i in range(1000)]
     for f in sigma:
@@ -420,4 +444,4 @@ def totp_exercises():
     print(pred.check_entailment(t['Semi-order2'], ('and', t['Semi-order1']), pred.tableau))
     print()
 
-test_prop_tableaux()
+benchmark_prop_tableaux()
