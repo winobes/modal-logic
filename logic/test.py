@@ -4,6 +4,14 @@ import prop, pred
 # Then we can just call the test function we are interested in and leave the
 # rest untouched.
 
+
+# takes a container of forumlas sigma and a formula phi and checks if
+# phi is entailed by sigma using the desired proof method 
+def check_entailment(sigma, phi, proof_method):
+    f = ('arrow', ('and', list(sigma)), phi)
+    return proof_method(f)
+
+
 def model_checking():
     fml_strs = [
                 '~ExPx->Ax~Px',
@@ -253,11 +261,11 @@ def run_resolve(sigma):
     for f in sigma:
         prop.resolve(f)
 
+#res_test_sigma = [prop.cnf(prop.random_fml((1,8))) for i in range(10000)]
 def test7():
     import timeit
     import cProfile
 
-    res_test_sigma = [prop.cnf(prop.random_fml((1,8))) for i in range(10000)]
     print(cProfile.run('run_resolve(res_test_sigma)'))
 
 def test_pred_tableaux():
@@ -273,7 +281,7 @@ def preds_random():
                 {'P':1, 'Q':1, 'R':2},
                 {},
                 set(),
-                (2,4), (1,2)
+                (3,5), (3,5)
             )
 
         n = 1
@@ -285,6 +293,97 @@ def preds_random():
             print("theorem")
             break;
         print()
-            
-preds_random()
-#test_pred_tableaux()
+
+def axioms():
+    irr = ('all', {'x'}, ('not', ('R', ['x', 'x'])))
+    ref = ('all', {'x'}, ('R', ['x', 'x']))
+    asym = ('all', {'x', 'y'}, ('arrow', ('R', ['x','y']), ('not', ('R', ['y', 'x']))))
+    sym = ('all', {'x', 'y'}, ('arrow', ('R', ['x','y']), ('R', ['y', 'x'])))
+    tr = ('all', {'x', 'y', 'z'}, ('arrow', ('and', [('R', ['x','y']), ('R', ['y', 'z'])]), ('R', ['x','z'])))
+    con = ('all', {'x', 'y'}, ('or', [('R', ['x','y']), ('R', ['y','x'])]))
+    io = ('all', {'x0','x1','x2','x3'}, ('arrow', ('and', [('R', ['x0','x1']), ('R', ['x2','x3'])]), ('or', [('R', ['x0','x3']), ('R', ['x2','x1'])])))
+    ser = ('all', {'x'}, ('exists', {'y'}, ('R', ['x','y']))) 
+    smtr = ('all', {'x0','x1','x2','x3'}, ('arrow', ('and', [('R', ['x0','x1']), ('R', ['x1','x2'])]), ('or', [('R', ['x1', 'x3']), ('R', ['x3', 'x2'])])))
+    # s1 is tautological
+    # s2 is the same as irreflexive
+    s3 = ('all', {'x0','x1','x2','x3'}, ('arrow', ('and', [('R', ['x0','x1']), ('not', ('R',['x1','x2'])), ('not', ('R', ['x2','x1'])), ('R', ['x2','x3'])]), ('R', ['x0','x3'])))
+    s4 = ('all', {'x0','x1','x2','x3'}, ('arrow', ('and', [('R', ['x0','x1']), ('R',['x1','x2']), ('not', ('R', ['x1','x3'])), ('not', ('R', ['x3','x1']))]), ('or', [('R', ['x0','x3']), ('R', ['x3','x0']), ('R', ['x2','x3']), ('R', ['x3','x2'])])))
+
+    axioms = {
+        'irreflexive': irr,
+        'reflexive': ref,
+        'asymmetric': asym,
+        'symmetric': sym,
+        'transitive': tr,
+        'connected': con,
+        'interval': io,
+        'serial': ser,
+        'semi-transitive': smtr,
+        's3': s3,
+        's4': s4
+    }
+
+    return axioms
+
+
+def theories():
+
+    a = axioms()
+
+    spo = [a['irreflexive'], a['transitive']]
+    sto = spo + [a['connected']]
+    io = [a['irreflexive'], a['interval']]
+    pro = [a['reflexive'], a['transitive']]
+    seo1 = [a['irreflexive'], a['interval'], a['semi-transitive']]
+    seo2 = [a['irreflexive'], a['s3'], a['s4']] # see R.v. Rooij Notes on Orders and Measurements
+
+    theories = {
+        'Strict Partial Order': spo,
+        'Strict Total Order': sto,
+        'Interval Order':  io,
+        'Pre-order': pro,
+        'Semi-order1': seo1,
+        'Semi-order2': seo2
+    }
+    return theories
+    
+
+def print_theories():
+    for theory in theories():
+        print(theory)
+        n = 0
+        for axiom in theories()[theory]:
+            n += 1
+            print('\t', n, pred.fml_to_str(axiom))
+        print()
+
+def test8():
+    phi = ('all', {'x', 'y', 'z'}, ('arrow', ('and', [('R', ['x','y']), ('R', ['y', 'z'])]),
+                                        ('not', ('R', ['z', 'x']))))
+    print(pred.check_entailment(theories()['SPO'], phi, pred.tableau))
+
+def totp_exercises():
+    a = axioms()
+    t = theories()
+
+    print_theories()
+
+    print('transitive, symmetric, serial |- reflexive')
+    print(pred.check_entailment([a['transitive'], a['symmetric'], a['serial']], a['reflexive'], pred.tableau))
+    print()
+
+    print('Strict Partial Order |- asymmetric')
+    print(pred.check_entailment(t['Strict Partial Order'], a['asymmetric'], pred.tableau))
+    print()
+
+    print('asymmetric |- irreflexive')
+    print(pred.check_entailment([a['asymmetric']], a['irreflexive'], pred.tableau))
+    print()
+
+    print('Semi-order 1 |- Semi-order 2')
+    print(pred.check_entailment(t['Semi-order1'], ('and', t['Semi-order2']), pred.tableau))
+    print('Semi-order 2 |- Semi-order 1')
+    print(pred.check_entailment(t['Semi-order2'], ('and', t['Semi-order1']), pred.tableau))
+    print()
+
+totp_exercises()
