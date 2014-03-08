@@ -598,3 +598,13 @@ def tableau_branch_closed(branch):
     negations = {g[1] for g in branch if g[0] == 'not'}
     return any(f == g for f in atoms for g in negations)
 
+# Tableaux implementation using dnf().
+def tableau_dnf(f):
+    f = dnf(('not', f))
+    if f[0] == 'and':
+        return tableau_branch_closed(f[1])
+    else:
+        for g in f[1]:
+            if not tableau_branch_closed(g[1]):
+                return False
+        return True
