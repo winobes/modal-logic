@@ -280,6 +280,82 @@ def cnf_remove_dups(f):
     else:
         return f
 
+# Convert to disjunctive normal form.
+def dnf(f):
+    return dnf_remove_dups(dnf_flatten(dnf_do(nnf(f))))
+
+# Helper function for dnf().
+def dnf_do(f):
+    if atom(f) or f[0] == 'not':
+        return f
+    if f[0] == 'or':
+        return ('or', [dnf_do(g) for g in f[1]])
+    if f[0] == 'and':
+        if len(f[1]) == 0:
+            return f
+        if len(f[1]) == 1:
+            return dnf_do(f[1][0])
+        else:
+            return dnf_distribute(dnf_do(f[1][0]), dnf_do(('and', f[1][1:])))
+    else:
+        raise ValueError('unknown operator:', f[0])
+
+# Helper function for dnf(): distribute conjunction over disjunction.
+def dnf_distribute(f1, f2):
+    if f1[0] == 'or':
+        if len(f1[1]) == 0:
+            return f1
+        else:
+            return ('or', [dnf_distribute(g, f2) for g in f1[1]])
+    if f2[0] == 'or':
+        if len(f2[1]) == 0:
+            return f2
+        else:
+            return ('or', [dnf_distribute(f1, g) for g in f2[1]])
+    else:
+        return ('and', [f1, f2])
+
+# Helper function for dnf(): collapse disjunction lists and conjunction lists.
+def dnf_flatten(f):
+    if f[0] == 'or':
+        return ('or', dnf_flatten_disj(f[1]))
+    if f[0] == 'and':
+        return ('and', dnf_flatten_conj(f[1]))
+    else:
+        return f
+
+# Helper function for dnf_flatten().
+def dnf_flatten_disj(flist):
+    if flist == []:
+        return flist
+    if flist[0][0] == 'or':
+        return dnf_flatten_disj(flist[0][1] + flist[1:])
+    else:
+        return [dnf_flatten(flist[0])] + dnf_flatten_disj(flist[1:])
+
+# Helper function for dnf_flatten().
+def dnf_flatten_conj(flist):
+    if flist == []:
+        return flist
+    if flist[0][0] == 'and':
+        return dnf_flatten_conj(flist[0][1] + flist[1:])
+    else:
+        return [flist[0]] + dnf_flatten_conj(flist[1:])
+
+# Helper function for dnf(): remove duplicate conjuncts and disjuncts.
+def dnf_remove_dups(f):
+    if f[0] == 'or':
+        dsj = []
+        for g in f[1]:
+            g = dnf_remove_dups(g)
+            if not g in dsj:
+                dsj.append(g)
+        return ('or', dsj)
+    if f[0] == 'and':
+        return ('and', list(set(f[1])))
+    else:
+        return f
+
 # Uses the truth table method to compute disjunctive normal form
 def dnf_tt(f):
     f_true_tt = [row for row in gen_tt(get_atom_names(f)) 
@@ -522,3 +598,13 @@ def tableau_branch_closed(branch):
     negations = {g[1] for g in branch if g[0] == 'not'}
     return any(f == g for f in atoms for g in negations)
 
+# Tableaux implementation using dnf().
+def tableau_dnf(f):
+    f = dnf(('not', f))
+    if f[0] == 'and':
+        return tableau_branch_closed(f[1])
+    else:
+        for g in f[1]:
+            if not tableau_branch_closed(g[1]):
+                return False
+        return True

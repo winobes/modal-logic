@@ -699,8 +699,8 @@ def remove_universals(f):
 
 # Convert to conjunctive normal form.
 def cnf(f):
-    return cnf_remove_dups(cnf_flatten(cnf_do(remove_universals(skolemize(safe(
-        nnf(f)))))))
+    return cnf_remove_dups(cnf_flatten(cnf_do(remove_universals(skolemize(
+        nnf(f))))))
 
 # Helper function for cnf().
 def cnf_do(f):

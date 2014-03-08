@@ -1,5 +1,14 @@
 import prop, pred
 
+def test_prover(prover, fml_to_str, tests):
+    for test in tests:
+        fml = test[0]
+        truthval = test[1]
+        if prover(fml) == truthval:
+            print('good:', fml_to_str(fml))
+        else:
+            print('fail:', fml_to_str(fml))
+
 # Perhaps it is a good idea to put every useful test in a separate function.
 # Then we can just call the test function we are interested in and leave the
 # rest untouched.
@@ -119,14 +128,16 @@ def test1():
 
     for i in range(100):
         f = prop.random_fml((3, 10))
-        print(f)
-        print(prop.fml_to_str(f))
-        print(prop.cnf(f))
-        print(prop.fml_to_str(prop.cnf(f)))
+        f_cnf = prop.cnf(f)
+        f_dnf = prop.dnf(f)
+        print('formula:         ', prop.fml_to_str(f))
+        print('cnf:             ', prop.fml_to_str(f_cnf))
+        print('dnf:             ', prop.fml_to_str(f_dnf))
         print('random valuation:', prop.evaluate(f, val))
         print('contradiction:   ', prop.is_contr(f))
         print('validity:        ', prop.is_valid(f))
-        print('cnf equivalent:  ', prop.are_equiv(f, prop.cnf(f)))
+        print('cnf equivalent:  ', prop.are_equiv(f, f_cnf))
+        print('dnf equivalent:  ', prop.are_equiv(f, f_dnf))
         print()
 
 def test2():
@@ -268,6 +279,29 @@ def test7():
 
     print(cProfile.run('run_resolve(res_test_sigma)'))
 
+def test_prop_tableaux():
+    tests = [
+        (prop.parse("pV~p"), True),
+        (prop.parse("p->p"), True),
+        # Fitting, p. 44 (fig. 3.2)
+        (prop.parse("(p->(q->r))->((pVs)->((q->r)Vs))"), True),
+        # Fitting, p. 46 (fig. 3.3) 
+        (prop.parse("(p&(q->(rVs)))->(pVq)"), True),
+        # Fitting, p. 46 (exc. 3.1.1)
+        (prop.parse("((p->q)&(q->r))->~(~r&p)"), True),
+        (prop.parse("(~p->q)->((p->q)->q)"), True),
+        (prop.parse("((p->q)->p)->p"), True),
+        (prop.parse("~(~(p&p)&p)"), True),
+        (prop.parse("~~(~(pVq)V(pVq))"), True),
+        (prop.parse("((((a->b)->(~c->~d))->c)->e)->((e->a)->(d->a))"), True)
+    ]
+
+    print('prop.tableau():')
+    test_prover(prop.tableau, prop.fml_to_str, tests)
+    print()
+    print('prop.tableau_dnf():')
+    test_prover(prop.tableau_dnf, prop.fml_to_str, tests)
+
 def test_pred_tableaux():
     sigma = [pred.random_fml((2, 4)) for i in range(1000)]
     for f in sigma:
@@ -386,4 +420,4 @@ def totp_exercises():
     print(pred.check_entailment(t['Semi-order2'], ('and', t['Semi-order1']), pred.tableau))
     print()
 
-totp_exercises()
+test_prop_tableaux()
