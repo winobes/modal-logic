@@ -127,6 +127,64 @@ def random_fml(npreds = (2, 8), arities = {}):
 
     return fmls[0]
 
+# gives a random list of formulas generated from the same language
+# useful for testing functions dealing with entailment
+# ranges N and D are a pair of numbers (inclusive)
+# preds and funcs are dictionaries from symbols to arities.
+def random_fml_list(preds, funcs, consts, N, D):
+
+    from random import randrange
+
+    return [random_fml2(preds, funcs, consts, randrange(D[0], D[1] + 1)) 
+                for i in range(randrange(N[0], N[1] + 1))]
+
+# Gives a random formula of the sepecified depth from the
+# specified language.
+def random_fml2(preds, funcs, consts, depth):
+
+    from random import choice
+
+    if depth == 0:
+        if not consts:
+            raise ValueError('0-depth formula requires constants')
+        pred = choice(list(preds.keys()))
+        arity = preds[pred]
+        return (pred, [random_term(funcs, consts, 0)  
+                for i in range(arity)])
+
+    else:
+        
+        if not consts: # if there are no constants, we need a quantifier
+            op = choice(['exists', 'all'])
+        else: # otherwise, we take any operator
+            op = choice(['and', 'or', 'arrow', 'not', 'exists', 'all'])
+
+        base_terms = consts.copy()
+        if op in ('all', 'exists'):
+            var = choice(['x','y','z'])
+            base_terms.add(var)  # include bound variables in consts
+            return (op, {var}, random_fml2(preds, funcs, base_terms, depth - 1))
+        if op == 'not':
+            return (op, random_fml2(preds, funcs, base_terms, depth - 1 ))
+        if op == 'arrow':
+            return (op, random_fml2(preds, funcs, base_terms, depth - 1),
+                        random_fml2(preds, funcs, base_terms, depth - 1))
+        if op in ('and', 'or'):
+            return (op, [random_fml2(preds, funcs, base_terms, depth - 1)
+                         for i in range(2)])
+
+def random_term(funcs, base_terms, depth):
+
+    from random import choice
+
+    if depth == 0:
+        return choice(list(base_terms))
+    else:
+        f = choice(list(funcs.keys()))
+        arity = funcs[f]
+        return (f, [random_term(funcs, base_terms, depth -1) 
+                for i in range(arity)])
+
 # Evaluate the formula f. The assignment is a dictionary from free variables to 
 # elements of the domain, and the interpretation is a dictionary from predicates
 # to a set of n-tuples of elements from the domain where n is the arity of the 

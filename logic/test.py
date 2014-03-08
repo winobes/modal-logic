@@ -267,4 +267,24 @@ def test_pred_tableaux():
         print(pred.tableau(f))
         print()
 
-test_pred_tableaux()
+def preds_random():
+    for i in range(1000000):
+        sigma = pred.random_fml_list(
+                {'P':1, 'Q':1, 'R':2},
+                {},
+                set(),
+                (2,4), (1,2)
+            )
+
+        n = 1
+        for phi in sigma[1:]:
+            print(n, pred.fml_to_str(phi))
+            n += 1
+        print('|-', pred.fml_to_str(sigma[0]))
+        if pred.tableau(('arrow', ('and', sigma[1:]), sigma[0])):
+            print("theorem")
+            break;
+        print()
+            
+preds_random()
+#test_pred_tableaux()
