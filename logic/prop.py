@@ -635,6 +635,6 @@ def tableau_dnf(f):
         return tableau_closed(f[1])
     else:
         for g in f[1]:
-            if not any(atom(h) and ('not', h) in g[1] for h in g[1]):
+            if tableau_closed(f[1])
                 return False
         return True
