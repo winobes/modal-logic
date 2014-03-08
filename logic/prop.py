@@ -168,6 +168,9 @@ def gen_tt(atoms):
     return [{p:val for (p, val) in zip(atoms, vals)} for vals in 
          product([False, True], repeat=len(atoms))]
 
+#
+# Negation normal form
+#
 
 # Convert each implicative subformula to a disjunctive one.
 def impl_to_disj(f):
@@ -203,6 +206,10 @@ def nnf_do(f):
     elif f[0] == 'and' or f[0] == 'or':
         return (f[0], [nnf_do(g) for g in f[1]])
     raise ValueError('unexpected operator:', f[0])
+
+#
+# Conjunctive normal form
+#
 
 # Convert to conjunctive normal form.
 def cnf(f):
@@ -279,6 +286,10 @@ def cnf_remove_dups(f):
         return ('or', list(set(f[1])))
     else:
         return f
+
+#
+# Disjunctive normal form
+#
 
 # Convert to disjunctive normal form.
 def dnf(f):
@@ -563,48 +574,67 @@ def clauses_to_str(clauses):
         s += '\n'
     return s
 
+#
+# Tableaux
+#
+
 def tableau(f):
-    return tableau_do([[cnf(('not', f))]])
+    return tableau_do([('not', f)])
 
-def tableau_do(tab):
-    new_tab = [] 
-    for branch in tab:
-        new_branches = tableau_expand(branch)
-        for branch in new_branches:
-            if not tableau_branch_closed(branch):
-                new_tab.append(branch) 
-    if new_tab == tab:
-        return False 
-    elif new_tab == []:
+# Helper function for tableau().
+def tableau_do(branch):
+    if tableau_closed(branch):
         return True
-    else: 
-        return tableau_do(new_tab)
 
-# Expand a branch and return the result as a list of branches.
-def tableau_expand(branch):
-    branch = branch[:]
+    # Handle alpha formulas.
     for f in branch:
-        if   f[0] == 'and':
-            branch.remove(f)
-            for g in f[1]: branch.append(g)
-            return [branch]
-        elif f[0] == 'or':
-            branch.remove(f)
-            return [branch + [g] for g in f[1]] 
-    return [branch]
+        if f[0] == 'not' and f[1][0] == 'not':
+            return tableau_do([g for g in branch if g != f] + [f[1][1]])
+        if f[0] == 'and':
+            return tableau_do([g for g in branch if g != f] + f[1])
+        if (f[0] == 'not' and f[1][0] == 'or'):
+            return tableau_do([g for g in branch if g != f] +
+                [('not', g) for g in f[1][1]])
+        if (f[0] == 'not' and f[1][0] == 'arrow'):
+            return tableau_do([g for g in branch if g != f] +
+                [f[1][1], ('not', f[1][2])])
 
-def tableau_branch_closed(branch):
-    atoms = {f for f in branch if atom(f)}
-    negations = {g[1] for g in branch if g[0] == 'not'}
-    return any(f == g for f in atoms for g in negations)
+    # Handle beta formulas.
+    for f in branch:
+        if f[0] == 'or':
+            return all(tableau_do([h for h in branch if h != f] + [g])
+                for g in f[1])
+        if f[0] == 'not' and f[1][0] == 'and':
+            return all(tableau_do([h for h in branch if h != f] + [('not', g)])
+                for g in f[1][1])
+        if f[0] == 'arrow':
+            return (tableau_do([g for g in branch if g != f] + [('not', f[1])])
+                and tableau_do([g for g in branch if g != f] + [f[2]]))
 
-# Tableaux implementation using dnf().
+    return False
+
+# Helper function for tableau(): check if a branch is closed (that is, check
+# whether a list of formulas contains both F and ~F for any formula F).
+def tableau_closed(branch):
+    negations = [f for f in branch if f[0] == 'not']
+    for f in negations:
+        if f[1] in branch:
+            return True
+    return False
+
+# Alternative tableaux implementation using dnf().
+#
+# First transform the negation of the formula to be proved into DNF. Since a
+# DNF formula is a disjunction of conjunctions, this gives us a finished
+# tableau tree. Now simply check if each conjunction is a closed branch (i.e.
+# it contains both an atom and its negation). If so, this means the whole
+# tableau is closed and the original formula is proved.
 def tableau_dnf(f):
     f = dnf(('not', f))
     if f[0] == 'and':
-        return tableau_branch_closed(f[1])
+        return tableau_closed(f[1])
     else:
         for g in f[1]:
-            if not tableau_branch_closed(g[1]):
+            if not any(atom(h) and ('not', h) in g[1] for h in g[1]):
                 return False
         return True
