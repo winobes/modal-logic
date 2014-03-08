@@ -503,8 +503,10 @@ def tableau_do(tab):
         return True
     else: 
         return tableau_do(new_tab)
-                 
+
+# Expand a branch and return the result as a list of branches.
 def tableau_expand(branch):
+    branch = branch[:]
     for f in branch:
         if   f[0] == 'and':
             branch.remove(f)
