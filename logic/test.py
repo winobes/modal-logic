@@ -111,14 +111,16 @@ def test1():
 
     for i in range(100):
         f = prop.random_fml((3, 10))
-        print(f)
-        print(prop.fml_to_str(f))
-        print(prop.cnf(f))
-        print(prop.fml_to_str(prop.cnf(f)))
+        f_cnf = prop.cnf(f)
+        f_dnf = prop.dnf(f)
+        print('formula:         ', prop.fml_to_str(f))
+        print('cnf:             ', prop.fml_to_str(f_cnf))
+        print('dnf:             ', prop.fml_to_str(f_dnf))
         print('random valuation:', prop.evaluate(f, val))
         print('contradiction:   ', prop.is_contr(f))
         print('validity:        ', prop.is_valid(f))
-        print('cnf equivalent:  ', prop.are_equiv(f, prop.cnf(f)))
+        print('cnf equivalent:  ', prop.are_equiv(f, f_cnf))
+        print('dnf equivalent:  ', prop.are_equiv(f, f_dnf))
         print()
 
 def test2():
@@ -286,5 +288,4 @@ def preds_random():
             break;
         print()
             
-preds_random()
-#test_pred_tableaux()
+test1()
