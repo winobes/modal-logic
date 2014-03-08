@@ -630,11 +630,16 @@ def tableau_closed(branch):
 # it contains both an atom and its negation). If so, this means the whole
 # tableau is closed and the original formula is proved.
 def tableau_dnf(f):
-    f = dnf(('not', f))
+    return tableau_dnf_do(dnf(('not', f)))
+
+# Helper function for tableau_dnf().
+def tableau_dnf_do(f):
+    if literal(f):
+        return False
     if f[0] == 'and':
-        return tableau_closed(f[1])
+        return any(atom(g) and ('not', g) in f[1] for g in f[1])
     else:
         for g in f[1]:
-            if tableau_closed(f[1])
+            if not tableau_dnf_do(g):
                 return False
         return True
