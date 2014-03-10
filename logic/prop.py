@@ -639,7 +639,4 @@ def tableau_dnf_do(f):
     if f[0] == 'and':
         return any(atom(g) and ('not', g) in f[1] for g in f[1])
     else:
-        for g in f[1]:
-            if not tableau_dnf_do(g):
-                return False
-        return True
+        return all(tableau_dnf_do(g) for g in f[1])
