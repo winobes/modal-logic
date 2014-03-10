@@ -327,7 +327,7 @@ def test_prop_tableaux():
     test_provers(provers, prop.fml_to_str, tests)
 
     fmls = [prop.random_fml((1, 17)) for i in range(1000)]
-    compare_provers([prop.tableau, prop.tableau_dnf], prop.fml_to_str, fmls)
+    compare_provers(provers, prop.fml_to_str, fmls)
 
 def benchmark_prop_tableaux():
     provers = [prop.tableau, prop.tableau_dnf]
