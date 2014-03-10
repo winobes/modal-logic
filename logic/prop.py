@@ -92,32 +92,58 @@ def evaluate(f, val):
         return not evaluate(f[1], val) or evaluate(f[2], val)
     raise ValueError('unknown operator:', f[0])
 
-# Returns the strongest implication of a set of premices; that is, the thing
-# that is true only at the rows in the truth table where all the premices are 
-# true.
-def strngst_impcl(sigma):
-    atoms = set.union(*[get_atom_names(f) for f in sigma])
-    rows = [t for t in gen_tt(atoms) if 
-            all(evaluate(f, t) for f in sigma)]
-    phi = tuple(['or', [ tuple(['and', [p if row[p] == True else ('not', p) 
-                for p in row] ]) for row in rows ] ])
-    return phi
+# Converts well-formatted strings into formulas
+def parse(fml_str):
+    import re
+    fml_str = ''.join(fml_str.split())
+    re_symbols = {re.escape(s) for s in {'(', ')', '&', '->', 'V', '~'}}
+    re_string =  '(' + ''.join(s + '|' for s in re_symbols)[:] + ')'
+    fml_lst = list(filter(None, re.split(re_string, fml_str)))
+    if len(fml_lst) == 1: 
+    # atomic formula
+        return fml_str 
 
-# Given a set of formulas, pretty prints a truth table showing the
-# value of each formula in sigma for each row in tt (if tt == None,
-# prints all possible rows WRT the atoms in sigma.
-def tt_to_str(tt, *sigma):
-    if tt == None: 
-        tt = gen_tt(set.union(*[get_atom_names(phi) for phi in sigma]))
-    atoms = list(tt[0].keys())
-    atoms.sort()
-    string = ''.join([p + '     ' for p in atoms])  + '   '
-    string += ''.join([fml_to_str(phi) + ',   ' for phi in sigma]) + '\n'
-    for row in tt:
-        string += ''.join([str(row[p]) + '  ' if row[p] else str(row[p]) + ' ' for p in atoms]) 
-        string += '   ' + ''.join([str(evaluate(phi, row)) + ' ' * (len(fml_to_str(phi)) - 1) + ' ' if evaluate(phi, row) else str(evaluate(phi, row)) + ' ' * (len(fml_to_str(phi)) - 1) for phi in sigma])  + '   \n'  
-    return string
-    
+    # partition fml_lst by subformula 
+    partition = [[]] 
+    bracket_stack = []
+    i = 0
+    for s in fml_lst:
+        partition[i].append(s)
+        if s == '(':
+            bracket_stack.append(s)
+        elif s == ')':
+            if not (bracket_stack.pop(), s) == ('(', ')'):
+                raise ValueError('mismatched brakets')
+            if bracket_stack == []:
+                i += 1
+                partition.append([])
+        elif bracket_stack == []:
+            if not s == '~' :
+                i += 1
+                partition.append([])
+    partition = partition[:-1]
+
+    # extra outter brackets
+    if len(partition) == 1 and (partition[0][0], partition[0][-1]) == ('(', ')'):
+        fml = tuple(parse(fml_str[1:-1]))
+    # ~ is main connective
+    elif len(partition) == 1 and partition[0][0] == '~':
+        fml = tuple(['not', parse(fml_str[1:])])
+    else: 
+        operator = [s[0] for s in partition if len(s) == 1 and s[0] in
+                        {'&', 'V', '->'}]
+        if not all(operator[0] == o for o in operator):
+            raise ValueError(' more than one main connective', fml_str)
+        elif len(operator) < 1:
+            raise ValueError('subformula has no main connective', fml_str)
+        elif operator[0] == '->':
+            fml = tuple(['arrow', parse("".join(partition[0])), parse("".join(partition[2])) ])
+        elif operator[0] == '&':
+            fml = tuple(['and', [parse("".join(s)) for s in partition if not s == ['&'] ] ])
+        elif operator[0] == 'V':
+            fml = tuple(['or', [parse("".join(s)) for s in partition if not s == ['V'] ] ])
+    return fml 
+
 #
 # Negation normal form
 #
@@ -317,18 +343,15 @@ def dnf_remove_dups(f):
     else:
         return f
 
-# Uses the truth table method to compute disjunctive normal form
-def dnf_tt(f):
-    f_true_tt = [row for row in gen_tt(get_atom_names(f)) 
-                 if evaluate(f, row) == True]
-    return tuple(['or', [tuple(['and', [p if row[p] else tuple(['not', p]) for p in row.keys() ]]) for row in f_true_tt] ])
+#
+# Truth tables
+#
 
-# Uses the truth table method to compute conjunctive normal form
-def cnf_tt(f):
-    f_false_tt = [row for row in gen_tt(get_atom_names(f)) 
-                 if evaluate(f, row) == False]
-    return tuple(['and', [tuple(['or', [p if not row[p] else tuple(['not', p]) 
-                 for p in row.keys() ]]) for row in f_false_tt] ])
+# Generates all possible valuations for a given set of atoms.     
+def gen_tt(atoms):
+    from itertools import product
+    return [{p:val for (p, val) in zip(atoms, vals)} for vals in 
+         product([False, True], repeat=len(atoms))]
 
 # Returns the set of propositions in f.
 def get_atom_names(f):
@@ -342,6 +365,34 @@ def get_atom_names(f):
         return set().union(*[get_atom_names(g) for g in f[1]]) 
     raise ValueError('unknown operator:', f[0]) 
 
+# Given a set of formulas, pretty prints a truth table showing the
+# value of each formula in sigma for each row in tt (if tt == None,
+# prints all possible rows WRT the atoms in sigma.
+def tt_to_str(tt, *sigma):
+    if tt == None: 
+        tt = gen_tt(set.union(*[get_atom_names(phi) for phi in sigma]))
+    atoms = list(tt[0].keys())
+    atoms.sort()
+    string = ''.join([p + '     ' for p in atoms])  + '   '
+    string += ''.join([fml_to_str(phi) + ',   ' for phi in sigma]) + '\n'
+    for row in tt:
+        string += ''.join([str(row[p]) + '  ' if row[p] else str(row[p]) + ' ' for p in atoms]) 
+        string += '   ' + ''.join([str(evaluate(phi, row)) + ' ' * (len(fml_to_str(phi)) - 1) + ' ' if evaluate(phi, row) else str(evaluate(phi, row)) + ' ' * (len(fml_to_str(phi)) - 1) for phi in sigma])  + '   \n'  
+    return string
+
+# Uses the truth table method to compute disjunctive normal form
+def dnf_tt(f):
+    f_true_tt = [row for row in gen_tt(get_atom_names(f)) 
+                 if evaluate(f, row) == True]
+    return tuple(['or', [tuple(['and', [p if row[p] else tuple(['not', p]) for p in row.keys() ]]) for row in f_true_tt] ])
+
+# Uses the truth table method to compute conjunctive normal form
+def cnf_tt(f):
+    f_false_tt = [row for row in gen_tt(get_atom_names(f)) 
+                 if evaluate(f, row) == False]
+    return tuple(['and', [tuple(['or', [p if not row[p] else tuple(['not', p]) 
+                 for p in row.keys() ]]) for row in f_false_tt] ])
+
 # Returns True if f evaluates to False for every possible valuation.
 def is_contr(f):
     atoms = get_atom_names(f)
@@ -354,6 +405,12 @@ def is_valid(f):
     truth_table = gen_tt(atoms)
     return all(evaluate(f, val) for val in truth_table)
 
+# Returns True if f and g have the same truth value for every possible valuation.
+def are_equiv(f, g):
+    atoms = get_atom_names(f) | get_atom_names(g)    
+    truth_table = gen_tt(atoms)
+    return  all(evaluate(f, val) == evaluate(g, val) for val in truth_table)
+
 # Returns True if phi is true at every line in the truth table where all
 # the formulas in sigma are true.
 def proves(sigma, phi):
@@ -362,104 +419,20 @@ def proves(sigma, phi):
         all(evaluate(psi, row) for psi in sigma)]
     return all(evaluate(phi, row) for row in all_sigma_tt)
 
-# Returns True if f and g have the same truth value for every possible valuation.
-def are_equiv(f, g):
-    atoms = get_atom_names(f) | get_atom_names(g)    
-    truth_table = gen_tt(atoms)
-    return  all(evaluate(f, val) == evaluate(g, val) for val in truth_table)
+# Returns the strongest implication of a set of premices; that is, the thing
+# that is true only at the rows in the truth table where all the premices are 
+# true.
+def strngst_impcl(sigma):
+    atoms = set.union(*[get_atom_names(f) for f in sigma])
+    rows = [t for t in gen_tt(atoms) if 
+            all(evaluate(f, t) for f in sigma)]
+    phi = tuple(['or', [ tuple(['and', [p if row[p] == True else ('not', p) 
+                for p in row] ]) for row in rows ] ])
+    return phi
 
-# Generates all possible valuations for a given set of atoms.     
-def gen_tt(atoms):
-    from itertools import product
-    return [{p:val for (p, val) in zip(atoms, vals)} for vals in 
-         product([False, True], repeat=len(atoms))]
-
-# Converts well-formatted strings into formulas
-def parse(fml_str):
-    import re
-    fml_str = ''.join(fml_str.split())
-    re_symbols = {re.escape(s) for s in {'(', ')', '&', '->', 'V', '~'}}
-    re_string =  '(' + ''.join(s + '|' for s in re_symbols)[:] + ')'
-    fml_lst = list(filter(None, re.split(re_string, fml_str)))
-    if len(fml_lst) == 1: 
-    # atomic formula
-        return fml_str 
-
-    # partition fml_lst by subformula 
-    partition = [[]] 
-    bracket_stack = []
-    i = 0
-    for s in fml_lst:
-        partition[i].append(s)
-        if s == '(':
-            bracket_stack.append(s)
-        elif s == ')':
-            if not (bracket_stack.pop(), s) == ('(', ')'):
-                raise ValueError('mismatched brakets')
-            if bracket_stack == []:
-                i += 1
-                partition.append([])
-        elif bracket_stack == []:
-            if not s == '~' :
-                i += 1
-                partition.append([])
-    partition = partition[:-1]
-
-    # extra outter brackets
-    if len(partition) == 1 and (partition[0][0], partition[0][-1]) == ('(', ')'):
-        fml = tuple(parse(fml_str[1:-1]))
-    # ~ is main connective
-    elif len(partition) == 1 and partition[0][0] == '~':
-        fml = tuple(['not', parse(fml_str[1:])])
-    else: 
-        operator = [s[0] for s in partition if len(s) == 1 and s[0] in
-                        {'&', 'V', '->'}]
-        if not all(operator[0] == o for o in operator):
-            raise ValueError(' more than one main connective', fml_str)
-        elif len(operator) < 1:
-            raise ValueError('subformula has no main connective', fml_str)
-        elif operator[0] == '->':
-            fml = tuple(['arrow', parse("".join(partition[0])), parse("".join(partition[2])) ])
-        elif operator[0] == '&':
-            fml = tuple(['and', [parse("".join(s)) for s in partition if not s == ['&'] ] ])
-        elif operator[0] == 'V':
-            fml = tuple(['or', [parse("".join(s)) for s in partition if not s == ['V'] ] ])
-    return fml 
 #
-#def get_clauses(cnf_formula):
-    #pass
+# Resolution
 #
-#def dpll(clauses):
-    #if const_literals(clauses):
-        #return True
-    #if [] in clauses:
-        #return False
-    #for c in clauses: if len(c) == 1:
-        #clauses = unit_propagate(c, clauses)
-#
-#
-def fml_to_clauses(f):
-    if atom(f) or f[0] == 'not':
-        return [[f]]
-    if f[0] == 'or': 
-        return [f[1]]
-    if f[0] == 'and':
-        return [fml_to_clauses(x)[0] for x in f[1]]
-
-def resolve_eval_lit(lit, asgmt):
-    if atom(lit):
-        if not lit[0] in asgmt:
-            raise ValueError ("literal not in assignment")
-        else:
-            return asgmt[lit[0]]
-    if lit[0] == 'not':
-        value = resolve_eval_lit(lit[1], asgmt)
-        if value == None:
-            return None 
-        else:
-            return not value
-    else:
-        raise ValueError ("not a literal:", lit)
 
 def resolve(f):
     asgmt = {atom_name: None for atom_name in get_atom_names(f)}
@@ -493,6 +466,14 @@ def resolve_do(clauses, asgmt):
     return (resolve_do(clauses, atom_false)
         or resolve_do(clauses, atom_true))
 
+def fml_to_clauses(f):
+    if atom(f) or f[0] == 'not':
+        return [[f]]
+    if f[0] == 'or': 
+        return [f[1]]
+    if f[0] == 'and':
+        return [fml_to_clauses(x)[0] for x in f[1]]
+
 def resolve_assign_unit_clauses(clauses, asgmt):
     new_asgmt = asgmt.copy() 
     for clause in clauses:
@@ -515,14 +496,21 @@ def resolve_simplify(clauses, asgmt):
             if resolve_eval_lit(lit, asgmt) == False:
                 clause.remove(lit)    
     return clauses
-                
-def clauses_to_str(clauses):
-    s = ""
-    for clause in clauses:
-        for lit in clause:
-            s += fml_to_str(lit) + ", "
-        s += '\n'
-    return s
+
+def resolve_eval_lit(lit, asgmt):
+    if atom(lit):
+        if not lit[0] in asgmt:
+            raise ValueError ("literal not in assignment")
+        else:
+            return asgmt[lit[0]]
+    if lit[0] == 'not':
+        value = resolve_eval_lit(lit[1], asgmt)
+        if value == None:
+            return None 
+        else:
+            return not value
+    else:
+        raise ValueError ("not a literal:", lit)
 
 #
 # Tableaux
