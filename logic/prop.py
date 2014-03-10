@@ -92,25 +92,6 @@ def evaluate(f, val):
         return not evaluate(f[1], val) or evaluate(f[2], val)
     raise ValueError('unknown operator:', f[0])
 
-# Returns True if f evaluates to False for every possible valuation.
-def is_contr(f):
-    atoms = get_atom_names(f)
-    truth_table = gen_tt(atoms)
-    return all(not evaluate(f, val) for val in truth_table)
-
-# Returns True if f evaluates to True for every possible valuation.
-def is_valid(f):
-    atoms = get_atom_names(f)
-    truth_table = gen_tt(atoms)
-    return all(evaluate(f, val) for val in truth_table)
-
-# Returns True if f and g have the same truth value 
-# for every possible valuation.
-def are_equiv(f, g):
-    atoms = get_atom_names(f) | get_atom_names(g)    
-    truth_table = gen_tt(atoms)
-    return  all(evaluate(f, val) == evaluate(g, val))
-
 # Returns the strongest implication of a set of premices; that is, the thing
 # that is true only at the rows in the truth table where all the premices are 
 # true.
@@ -121,12 +102,6 @@ def strngst_impcl(sigma):
     phi = tuple(['or', [ tuple(['and', [p if row[p] == True else ('not', p) 
                 for p in row] ]) for row in rows ] ])
     return phi
-
-# Generates all possible valuations for a given set of atoms.     
-def gen_tt(atoms):
-    from itertools import product
-    return [{p:val for (p, val) in zip(atoms, vals)} for vals in 
-         product([False, True], repeat=len(atoms))]
 
 # Given a set of formulas, pretty prints a truth table showing the
 # value of each formula in sigma for each row in tt (if tt == None,
@@ -143,31 +118,6 @@ def tt_to_str(tt, *sigma):
         string += '   ' + ''.join([str(evaluate(phi, row)) + ' ' * (len(fml_to_str(phi)) - 1) + ' ' if evaluate(phi, row) else str(evaluate(phi, row)) + ' ' * (len(fml_to_str(phi)) - 1) for phi in sigma])  + '   \n'  
     return string
     
-# Returns True if f evaluates to False for every possible valuation.
-def is_contr(f):
-    atoms = get_atom_names(f)
-    truth_table = gen_tt(atoms)
-    return all(not evaluate(f, val) for val in truth_table)
-
-# Returns True if f evaluates to True for every possible valuation.
-def is_valid(f):
-    atoms = get_atom_names(f)
-    truth_table = gen_tt(atoms)
-    return all(evaluate(f, val) for val in truth_table)
-
-# Returns True if f and g have the same truth value for every possible valuation.
-def are_equiv(f, g):
-    atoms = get_atom_names(f) | get_atom_names(g)    
-    truth_table = gen_tt(atoms)
-    return  all(evaluate(f, val) == evaluate(g, val) for val in truth_table)
-
-# Generates all possible valuations for a given set of atoms.     
-def gen_tt(atoms):
-    from itertools import product
-    atoms = list(atoms).sort()
-    return [{p:val for (p, val) in zip(atoms, vals)} for vals in 
-         product([False, True], repeat=len(atoms))]
-
 #
 # Negation normal form
 #
