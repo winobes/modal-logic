@@ -18,6 +18,24 @@ def test_prover(prover, fml_to_str, tests):
         else:
             print('fail:', fml_to_str(fml))
 
+def test_provers(provers, fml_to_str, tests):
+    for p in provers:
+        print('%s:', p.__name__)
+        test_prover(p, fml_to_str, tests)
+        print()
+
+# Check if provers return the same result for every formula.
+def compare_provers(provers, fml_to_str, fmls):
+    results = dict()
+    for f in fmls:
+        for p in provers:
+            results[p.__name__] = p(f)
+        if any(results[p] != results[provers[0].__name__] for p in results):
+            print('fail:', fml_to_str(f))
+            for p in results:
+                print('%s: %s' % (p, results[p]))
+            print()
+
 # Perhaps it is a good idea to put every useful test in a separate function.
 # Then we can just call the test function we are interested in and leave the
 # rest untouched.
@@ -304,12 +322,12 @@ def test_prop_tableaux():
         (prop.parse("~~(~(pVq)V(pVq))"), True),
         (prop.parse("((((a->b)->(~c->~d))->c)->e)->((e->a)->(d->a))"), True)
     ]
+    provers = [prop.tableau, prop.tableau_dnf]
 
-    print('prop.tableau():')
-    test_prover(prop.tableau, prop.fml_to_str, tests)
-    print()
-    print('prop.tableau_dnf():')
-    test_prover(prop.tableau_dnf, prop.fml_to_str, tests)
+    test_provers(provers, prop.fml_to_str, tests)
+
+    fmls = [prop.random_fml((1, 17)) for i in range(1000)]
+    compare_provers([prop.tableau, prop.tableau_dnf], prop.fml_to_str, fmls)
 
 def benchmark_prop_tableaux():
     provers = [prop.tableau, prop.tableau_dnf]
