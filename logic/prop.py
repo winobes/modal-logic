@@ -512,6 +512,40 @@ def resolve_eval_lit(lit, asgmt):
     else:
         raise ValueError ("not a literal:", lit)
 
+def resolve2(f):
+    return resolve2_do(fml_to_clauses(cnf(('not', f))))
+
+def resolve2_do(clauses):
+
+    res = resolve2_resolvable(clauses)
+    if not res:
+        return False
+
+    lit = res[0]
+    c1 = res[1]
+    c2 = res[2]
+
+    clauses.remove(c1)
+    c1.remove(lit)
+    clauses.remove(c2)
+    c2.remove(('not',lit))
+    clauses.append(c1 + c2)
+
+    if [] in clauses:
+        return True
+
+    return resolve2_do(clauses)
+
+def resolve2_resolvable(clauses):
+    for c1 in clauses:
+        for lit in c1:
+            if atom(lit):
+                for c2 in clauses:
+                    if c2 is c1:
+                        continue
+                    if ('not', lit) in c2:
+                        return (lit, c1, c2)
+
 #
 # Tableaux
 #
