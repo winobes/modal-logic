@@ -474,10 +474,7 @@ def skolemize_do(f, funcs, univars):
             skolemize_do(f[2], funcs, univars))
     if f[0] == 'all':
         univars += list(f[1])
-        g = (f[0], f[1], skolemize_do(f[2], funcs, univars))
-        for v in f[1]:
-            univars.remove(v)
-        return g
+        return (f[0], f[1], skolemize_do(f[2], funcs, univars))
     if f[0] == 'exists':
         g = f[2]
         for v in f[1]:
