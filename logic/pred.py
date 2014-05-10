@@ -775,35 +775,35 @@ def cnf_remove_dups(f):
     else:
         return f
 
-def tableau(f):
-    return tableau_do([[cnf(('not', f))]])
-
-def tableau_do(tab):
-    new_tab = [] 
-    for branch in tab:
-        new_branches = tableau_expand(branch)
-        for branch in new_branches:
-            if not tableau_branch_closed(branch):
-                new_tab.append(branch) 
-    if new_tab == []:
-        return True
-    elif new_tab == tab:
-        return False 
-    else: 
-        return tableau_do(new_tab)
-
+#def tableau(f):
+#    return tableau_do([[cnf(('not', f))]])
+#
+#def tableau_do(tab):
+#    new_tab = [] 
+#    for branch in tab:
+#        new_branches = tableau_expand(branch)
+#        for branch in new_branches:
+#            if not tableau_branch_closed(branch):
+#                new_tab.append(branch) 
+#    if new_tab == []:
+#        return True
+#    elif new_tab == tab:
+#        return False 
+#    else: 
+#        return tableau_do(new_tab)
+#
 # Expand a branch and return the result as a list of branches.
-def tableau_expand(branch):
-    branch = branch[:]
-    for f in branch:
-        if f[0] == 'and':
-            branch.remove(f)
-            for g in f[1]: branch.append(g)
-            return [branch]
-        elif f[0] == 'or':
-            branch.remove(f)
-            return [branch + [g] for g in f[1]]
-    return [branch]
+#def tableau_expand(branch):
+#    branch = branch[:]
+#    for f in branch:
+#        if f[0] == 'and':
+#            branch.remove(f)
+#            for g in f[1]: branch.append(g)
+#            return [branch]
+#        elif f[0] == 'or':
+#            branch.remove(f)
+#            return [branch + [g] for g in f[1]]
+#    return [branch]
 
 def tableau_branch_closed(branch):
     positives = [f for f in branch if pred(f)]
@@ -818,3 +818,125 @@ def tableau_branch_closed(branch):
                         fml_to_str(g), subst_to_str(s)))
                     return True
     return False
+
+def tableau(f, gdepth):
+    branches = tableau_expand([('not', f)], gdepth)
+    #return all(tableau_branch_closed(branch) for branch in branches)
+    for branch in branches:
+        if not tableau_branch_closed(branch):
+            print("branch not closed:", branch)
+            return False
+    return True
+
+def tableau_skolemize(f, exists_vars):
+    print(fml_to_str(f))
+    free_vars = tableau_get_free_vars(f, exists_vars)
+    print(free_vars)
+    used_funcs = skolemize_get_funcs(f)
+
+    g = f
+    i = 0
+    for v in exists_vars:
+        while 'f' + str(i) in used_funcs:
+            i += 1
+        skolem_func = 'f' + str(i)
+        used_funcs.append(skolem_func)
+        g = skolemize_replace(g, v, (skolem_func, list(free_vars)))
+    return g
+
+def tableau_get_free_vars(f, bound_vars):
+    if pred(f):
+        free_vars = set()
+        for term in f[1]:
+            free_vars = free_vars.union(tableau_get_free_vars_in_term(f[1],
+                bound_vars))
+        return free_vars
+    if f[0] == 'not':
+        return tableau_get_free_vars(f[1], bound_vars)
+    if f[0] == 'and' or f[0] == 'or':
+        free_vars = set()
+        for g in f[1]:
+            free_vars = free_vars.union(tableau_get_free_vars(g, bound_vars))
+        return free_vars
+    if f[0] == 'all' or f[0] == 'exists':
+        return tableau_get_free_vars(f[2], bound_vars.union(f[1]))
+    else:
+        return set()
+
+def tableau_get_free_vars_in_term(termlist, bound_vars):
+    free_vars = set()
+    for t in termlist:
+        if variable(t):
+            if t not in bound_vars:
+                free_vars.add(t)
+        if function(t):
+            free_vars = free_vars.union(tableau_get_free_vars_in_term(t[1],
+                bound_vars))
+    return free_vars
+
+def tableau_expand(branch, qdepth):
+    return tableau_expand_do([branch], qdepth)
+
+def tableau_expand_do(branches, gdepth):
+    for branch in branches[:]:
+        # Handle alpha formulas.
+        for f in branch:
+            newbranch = None
+            if f[0] == 'not' and f[1][0] == 'not':
+                newbranch = [g for g in branch if g != f] + [f[1][1]]
+            if f[0] == 'and':
+                newbranch = [g for g in branch if g != f] + f[1]
+            if f[0] == 'not' and f[1][0] == 'or':
+                newbranch = ([g for g in branch if g != f] +
+                    [('not', g) for g in f[1][1]])
+            if f[0] == 'not' and f[1][0] == 'arrow':
+                newbranch = [f[1][1], ('not', f[1][2])]
+            if newbranch:
+                branches.remove(branch)
+                branches.append(newbranch)
+                return tableau_expand_do(branches, gdepth)
+
+        # Handle beta formulas.
+        for f in branch:
+            newbranches = None
+            if f[0] == 'or':
+                newbranches = [([h for h in branch if h != f] + [g])
+                    for g in f[1]]
+            if f[0] == 'not' and f[1][0] == 'and':
+                newbranches = [([h for h in branch if h != f] + [('not', g)])
+                    for g in f[1][1]]
+            if f[0] == 'arrow':
+                newbranches = [[g for g in branch if g != f] + [('not', f[1])],
+                    [g for g in branch if g != f] + [f[2]]]
+            if newbranches:
+                branches.remove(branch)
+                branches = branches + newbranches
+                return tableau_expand_do(branches, gdepth)
+
+        # Handle delta formulas (before gamma formulas).
+        for f in branch:
+            newbranch = None
+            if f[0] == 'not' and f[1][0] == 'all':
+                newbranch = [g for g in branch if g != f] + \
+                    [('not', tableau_skolemize(f[1][2], f[1][1]))]
+            if f[0] == 'exists':
+                newbranch = [g for g in branch if g != f] + \
+                    [tableau_skolemize(f[2], f[1])]
+            if newbranch:
+                branches.remove(branch)
+                branches.append(newbranch)
+                return tableau_expand_do(branches, gdepth)
+
+        # Handle gamma formulas.
+        for f in branch:
+            newbranch = None
+            if f[0] == 'not' and f[1][0] == 'exists':
+                newbranch = [g for g in branch if g != f] + [('not', f[1][2])]
+            if f[0] == 'all':
+                newbranch = [g for g in branch if g != f] + [f[2]]
+            if newbranch:
+                branches.remove(branch)
+                branches.append(newbranch)
+                return tableau_expand_do(branches, gdepth)
+
+    return branches
