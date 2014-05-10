@@ -462,4 +462,66 @@ def totp_exercises():
     print(pred.check_entailment(t['Semi-order2'], ('and', t['Semi-order1']), pred.tableau))
     print()
 
-benchmark_prop_tableaux()
+def test_pred_tableaux_2():
+    fmls = [
+        # Fitting p. 138 (fig. 6.1)
+        ('arrow',
+            ('all', {'x'},
+                ('or', [
+                    ('P', ['x']),
+                    ('Q', ['x'])])),
+            ('or', [
+                ('exists', {'x'}, ('P', ['x'])),
+                ('all', {'x'}, ('Q', ['x']))])),
+
+        # Fitting p. 139 (exc. 6.1.1)
+        ('arrow',
+            ('exists', {'x'},
+                ('all', {'y'},
+                    ('R', ['x', 'y']))),
+            ('all', {'y'},
+                ('exists', 'x',
+                    ('R', ['x', 'y'])))),
+        ('arrow',
+            ('all', {'x'},
+                ('exists', {'y'},
+                    ('R', ['x', 'y']))),
+            ('exists', {'y'},
+                ('all', 'x',
+                    ('R', ['x', 'y'])))),
+        ('exists', {'x'},
+            ('arrow',
+                ('P', ['x']),
+                ('all', {'x'}, ('P', ['x'])))),
+        ('arrow',
+            ('exists', {'x'},
+                ('or', [
+                    ('P', ['x']),
+                    ('Q', ['x'])])),
+            ('or', [
+                ('exists', {'x'}, ('P', ['x'])),
+                ('exists', {'x'}, ('Q', ['x']))])),
+        ('arrow',
+            ('exists', {'x'},
+                ('and', [
+                    ('P', ['x']),
+                    ('Q', ['x'])])),
+            ('and', [
+                ('exists', {'x'}, ('P', ['x'])),
+                ('exists', {'x'}, ('Q', ['x']))])),
+
+        # Reflexitivity, symmetry, transitivitiy.
+        ('all', {'x'}, ('R', ['x', 'x'])),
+        ('all', {'x', 'y'}, ('arrow', ('R', ['x', 'y']), ('R', ['y', 'x']))),
+        ('all', {'x', 'y', 'z'},
+            ('arrow',
+                ('and', [('R', ['x', 'y']), ('R', ['y', 'z'])]),
+                ('R', ['x', 'z'])))
+    ]
+
+    for f in fmls:
+        print(pred.fml_to_str(f))
+        print(pred.tableau(f, 10))
+        print()
+
+test_pred_tableaux_2()
