@@ -436,7 +436,7 @@ def print_theories():
 def test8():
     phi = ('all', {'x', 'y', 'z'}, ('arrow', ('and', [('R', ['x','y']), ('R', ['y', 'z'])]),
                                         ('not', ('R', ['z', 'x']))))
-    print(pred.check_entailment(theories()['SPO'], phi, pred.tableau))
+    print(pred.check_entailment(theories()['Strict Partial Order'], phi, pred.tableau))
 
 def totp_exercises():
     a = axioms()

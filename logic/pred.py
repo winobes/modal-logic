@@ -1,12 +1,16 @@
 def pred(f):
     return f[0] in 'PQRS'
 
+# A constant is just a 0-ary function
 def constant(x):
     return function(x) and len(x[1]) == 0 
 
+# Variables always start a letter from the end of the alphabet.
 def variable(x):
     return isinstance(x, str) and x[0] in 'xyz'
 
+# Functions (and constants) always start with a letter from the 
+# beginning of the alphabet
 def function(x):
     return isinstance(x, tuple) and x[0][0] in 'abcdfghj'
 
@@ -806,6 +810,7 @@ def cnf_remove_dups(f):
 #    return [branch]
 
 def tableau_branch_closed(branch):
+    
     positives = [f for f in branch if pred(f)]
     negatives = [f for f in branch if f[0] == 'not']
     
@@ -829,9 +834,7 @@ def tableau(f, gdepth):
     return True
 
 def tableau_skolemize(f, exists_vars):
-    print(fml_to_str(f))
     free_vars = tableau_get_free_vars(f, exists_vars)
-    print(free_vars)
     used_funcs = skolemize_get_funcs(f)
 
     g = f
@@ -877,66 +880,96 @@ def tableau_get_free_vars_in_term(termlist, bound_vars):
 def tableau_expand(branch, qdepth):
     return tableau_expand_do([branch], qdepth)
 
+# Returns a tuple the first element of which is the type
+# If 'alpha' or 'beta', the second element is a list
+# of subformulas.
+# If 'gamma' or 'delta', the second element is a tuple
+# contaning the quantified variables and the subformula.
+def tableau_fml_type(f):
+
+    if f[0] == 'not' and f[1][0] == 'not':
+        return ('alpha', [f[1][1]])
+    if f[0] == 'and':
+        return ('alpha', f[1])
+    if f[0] == 'not' and f[1][0] == 'or':
+        return ('alpha', [('not', g) for g in f[1][1]])
+    if f[0] == 'not' and f[1][0] == 'arrow':
+        return ('alpha', [f[1][1], ('not', f[1][2])])
+    
+    if f[0] == 'or':
+        return ('beta', f[1])
+    if f[0] == 'not' and f[1][0] == 'and':
+        return ('beta', [('not', g) for g in f[1][1]])
+    if f[0] == 'arrow':
+        return ('beta', [('not', f[1]), f[2]])
+
+    if f[0] == 'exists':
+        return ('delta', (f[1], f[2]))
+    if f[0] == 'not' and f[1][0] == 'all':
+        return ('delta', (f[1][1], ('not', f[1][2])))
+
+    if f[0] == 'all':
+        return ('gamma', (f[1], f[2]))
+    if f[0] == 'not' and f[1][0] == 'exists':
+        return ('gamma', (f[1][1], ('not', f[1][2])))
+
+    else:
+        return ('literal', f)
+
 def tableau_expand_do(branches, gdepth):
+
     for branch in branches[:]:
+
         # Handle alpha formulas.
         for f in branch:
-            newbranch = None
-            if f[0] == 'not' and f[1][0] == 'not':
-                newbranch = [g for g in branch if g != f] + [f[1][1]]
-            if f[0] == 'and':
-                newbranch = [g for g in branch if g != f] + f[1]
-            if f[0] == 'not' and f[1][0] == 'or':
-                newbranch = ([g for g in branch if g != f] +
-                    [('not', g) for g in f[1][1]])
-            if f[0] == 'not' and f[1][0] == 'arrow':
-                newbranch = [f[1][1], ('not', f[1][2])]
-            if newbranch:
+            tmp = tableau_fml_type(f)    
+            subs = tmp[1]
+            fml_type = tmp[0]
+
+            if fml_type == 'alpha':
                 branches.remove(branch)
-                branches.append(newbranch)
+                branch.remove(f)
+                branches.append(branch + subs)
                 return tableau_expand_do(branches, gdepth)
 
         # Handle beta formulas.
         for f in branch:
-            newbranches = None
-            if f[0] == 'or':
-                newbranches = [([h for h in branch if h != f] + [g])
-                    for g in f[1]]
-            if f[0] == 'not' and f[1][0] == 'and':
-                newbranches = [([h for h in branch if h != f] + [('not', g)])
-                    for g in f[1][1]]
-            if f[0] == 'arrow':
-                newbranches = [[g for g in branch if g != f] + [('not', f[1])],
-                    [g for g in branch if g != f] + [f[2]]]
-            if newbranches:
+            tmp = tableau_fml_type(f)    
+            subs = tmp[1]
+            fml_type = tmp[0]
+
+            if fml_type == 'beta':
                 branches.remove(branch)
-                branches = branches + newbranches
+                branch.remove(f)
+                for g in subs:
+                    branches.append(branch + [g])
                 return tableau_expand_do(branches, gdepth)
 
         # Handle delta formulas (before gamma formulas).
         for f in branch:
-            newbranch = None
-            if f[0] == 'not' and f[1][0] == 'all':
-                newbranch = [g for g in branch if g != f] + \
-                    [('not', tableau_skolemize(f[1][2], f[1][1]))]
-            if f[0] == 'exists':
-                newbranch = [g for g in branch if g != f] + \
-                    [tableau_skolemize(f[2], f[1])]
-            if newbranch:
+            tmp = tableau_fml_type(f)    
+            sub = tmp[1]
+            fml_type = tmp[0]
+
+            if fml_type == 'delta':
                 branches.remove(branch)
-                branches.append(newbranch)
+                branch.remove(f)
+                branch.append(tableau_skolemize(sub[1], sub[0]))
+                branches.append(branch)
                 return tableau_expand_do(branches, gdepth)
 
         # Handle gamma formulas.
         for f in branch:
-            newbranch = None
-            if f[0] == 'not' and f[1][0] == 'exists':
-                newbranch = [g for g in branch if g != f] + [('not', f[1][2])]
-            if f[0] == 'all':
-                newbranch = [g for g in branch if g != f] + [f[2]]
-            if newbranch:
+            tmp = tableau_fml_type(f)
+            sub = tmp[1]
+            fml_type = tmp[0]
+
+            if fml_type == 'gamma':
                 branches.remove(branch)
-                branches.append(newbranch)
+                branch.remove(f)
+                branch.append(sub[1])
+                branches.append(branch)
                 return tableau_expand_do(branches, gdepth)
+
 
     return branches
