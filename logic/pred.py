@@ -1,3 +1,5 @@
+import util
+
 def pred(f):
     return f[0] in 'PQRS'
 
@@ -509,6 +511,10 @@ def skolemize_get_funcs(f):
         return skolemize_get_funcs(f[2])
     raise ValueError('unknown operator: %s' % f[0])
 
+# Helper function for handling gamma formulas
+def parametrize(f, v, parm):
+    return skolemize_replace(f, v, parm)
+
 # Helper function for skolemize():
 def skolemize_replace(f, v, func):
     if pred(f):
@@ -527,6 +533,7 @@ def skolemize_replace(f, v, func):
 #
 # Unification
 #
+
 
 # - A list of terms simply is the list of arguments of a predicate or a
 #   function.
@@ -788,15 +795,15 @@ def tableau(f, gdepth):
     return tableau_closed(branches)
 
 def tableau_expand(branch, qdepth):
-    return tableau_expand_do([branch], qdepth, 0)
+    return tableau_expand_do([branch], qdepth, 0, 0)
 
-def tableau_expand_do(branches, gdepth, skolem_func_counter):
-    print('\ntableau_expand_do:')
+def tableau_expand_do(branches, gdepth, skolem_func_counter, uni_var_counter):
+    util.dprint('\ntableau_expand_do:')
     for branch in branches:
-        print('branch:')
+        util.dprint('branch:')
         for fml in branch:
-            print('  ', fml_to_str(fml))
-    print()
+            util.dprint('  ', fml_to_str(fml))
+    util.dprint()
 
     for branch in branches[:]:
         # Handle alpha formulas.
@@ -804,49 +811,54 @@ def tableau_expand_do(branches, gdepth, skolem_func_counter):
             fml_type, subs = tableau_fml_type(f)    
 
             if fml_type == 'alpha':
-                print('alpha rule on', fml_to_str(f))
+                util.dprint('alpha rule on', fml_to_str(f))
                 branches.remove(branch)
                 branch.remove(f)
                 branches.append(branch + subs)
-                return tableau_expand_do(branches, gdepth, skolem_func_counter)
+                return tableau_expand_do(branches, gdepth, skolem_func_counter, uni_var_counter)
 
         # Handle beta formulas.
         for f in branch:
             fml_type, subs = tableau_fml_type(f)    
 
             if fml_type == 'beta':
-                print('beta rule on', fml_to_str(f))
+                util.dprint('beta rule on', fml_to_str(f))
                 branches.remove(branch)
                 branch.remove(f)
                 for g in subs:
                     branches.append(branch + [g])
-                return tableau_expand_do(branches, gdepth, skolem_func_counter)
+                return tableau_expand_do(branches, gdepth, skolem_func_counter, uni_var_counter)
 
         # Handle delta formulas (before gamma formulas).
         for f in branch:
             fml_type, subs = tableau_fml_type(f)    
 
             if fml_type == 'delta':
-                print('delta rule on', fml_to_str(f))
+                util.dprint('delta rule on', fml_to_str(f))
                 branches.remove(branch)
                 branch.remove(f)
                 g, skolem_func_counter = tableau_skolemize(subs[1], subs[0],
                     skolem_func_counter)
                 branch.append(g)
                 branches.append(branch)
-                return tableau_expand_do(branches, gdepth, skolem_func_counter)
+                return tableau_expand_do(branches, gdepth, skolem_func_counter, uni_var_counter)
 
         # Handle gamma formulas.
         for f in branch:
             fml_type, subs = tableau_fml_type(f)
 
             if fml_type == 'gamma':
-                print('gamma rule on', fml_to_str(f))
+                util.dprint('gamma rule on', fml_to_str(f))
                 branches.remove(branch)
                 branch.remove(f)
-                branch.append(subs[1])
+                new_f = subs[1]
+                for var in subs[0]:
+                    parameter =  'x' + str(uni_var_counter)
+                    uni_var_counter += 1
+                    new_f = parametrize(new_f, var, parameter)
+                branch.append(new_f)
                 branches.append(branch)
-                return tableau_expand_do(branches, gdepth, skolem_func_counter)
+                return tableau_expand_do(branches, gdepth, skolem_func_counter, uni_var_counter)
 
     return branches
 
@@ -930,21 +942,21 @@ def tableau_get_free_vars_in_term(termlist, bound_vars):
     return free_vars
 
 def tableau_closed(branches):
-    print('tableau_closed:')
+    util.dprint('tableau_closed:')
     for b in branches:
-        print('branch:')
+        util.dprint('branch:')
         for f in b:
-            print('  ', fml_to_str(f))
-    print()
+            util.dprint('  ', fml_to_str(f))
+    util.dprint()
     substs = []
     for branch in branches:
-        print('substs so far:', subst_to_str(substs))
+        util.dprint('substs so far:', subst_to_str(substs))
         newsubsts = tableau_branch_closed(branch, substs)
-        print('new substitutions:', subst_to_str(newsubsts))
+        util.dprint('new substitutions:', subst_to_str(newsubsts))
         if newsubsts == None:
             return False
         substs += newsubsts
-    print('tableau closed with', subst_to_str(substs))
+    util.dprint('tableau closed with', subst_to_str(substs))
     return True
 
 def tableau_branch_closed(branch, substs):

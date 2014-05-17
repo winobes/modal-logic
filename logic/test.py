@@ -1,5 +1,7 @@
 import prop, pred
 
+import util
+
 def benchmark_prover(prover, fmls):
     import cProfile
     cProfile.runctx('for f in fmls: prover(f)', globals(), locals())
@@ -678,5 +680,6 @@ def schubert_steamroller():
     print()
     print(pred.tableau(fml, 0))
 
-test_pred_tableaux_2()
+util.debug = 0
 
+totp_exercises()
