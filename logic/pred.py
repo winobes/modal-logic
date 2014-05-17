@@ -779,153 +779,16 @@ def cnf_remove_dups(f):
     else:
         return f
 
-#def tableau(f):
-#    return tableau_do([[cnf(('not', f))]])
 #
-#def tableau_do(tab):
-#    new_tab = [] 
-#    for branch in tab:
-#        new_branches = tableau_expand(branch)
-#        for branch in new_branches:
-#            if not tableau_branch_closed(branch):
-#                new_tab.append(branch) 
-#    if new_tab == []:
-#        return True
-#    elif new_tab == tab:
-#        return False 
-#    else: 
-#        return tableau_do(new_tab)
+# Tableaux
 #
-# Expand a branch and return the result as a list of branches.
-#def tableau_expand(branch):
-#    branch = branch[:]
-#    for f in branch:
-#        if f[0] == 'and':
-#            branch.remove(f)
-#            for g in f[1]: branch.append(g)
-#            return [branch]
-#        elif f[0] == 'or':
-#            branch.remove(f)
-#            return [branch + [g] for g in f[1]]
-#    return [branch]
-
-def tableau_closed(branches):
-    print('tableau_closed:')
-    for b in branches:
-        print('branch:')
-        for f in b:
-            print('  ', fml_to_str(f))
-    print()
-    substs = []
-    for branch in branches:
-        print('substs so far:', subst_to_str(substs))
-        newsubsts = tableau_branch_closed(branch, substs)
-        print('new substitutions:', subst_to_str(newsubsts))
-        if newsubsts == None:
-            return False
-        substs += newsubsts
-    print('tableau closed with', subst_to_str(substs))
-    return True
-
-def tableau_branch_closed(branch, substs):
-    positives = [f for f in branch if pred(f)]
-    negatives = [f for f in branch if f[0] == 'not']
-
-    for f in positives:
-        for g in negatives:
-            if f[0] == g[1][0]:
-                f_terms = subst_termlist(substs, f[1])
-                g_terms = subst_termlist(substs, g[1][1])
-                newsubsts = unify_termlists(f_terms, g_terms)
-                if newsubsts != None:
-                    return newsubsts
-    return None
 
 def tableau(f, gdepth):
     branches = tableau_expand([('not', f)], gdepth)
     return tableau_closed(branches)
 
-def tableau_skolemize(f, exists_vars, func_counter):
-    free_vars = tableau_get_free_vars(f, exists_vars)
-    used_funcs = skolemize_get_funcs(f)
-
-    g = f
-    for v in exists_vars:
-        while 'f' + str(func_counter) in used_funcs:
-            func_counter += 1
-        skolem_func = 'f' + str(func_counter)
-        used_funcs.append(skolem_func)
-        g = skolemize_replace(g, v, (skolem_func, list(free_vars)))
-    return (g, func_counter + 1)
-
-def tableau_get_free_vars(f, bound_vars):
-    if pred(f):
-        free_vars = set()
-        for term in f[1]:
-            free_vars = free_vars.union(tableau_get_free_vars_in_term(f[1],
-                bound_vars))
-        return free_vars
-    if f[0] == 'not':
-        return tableau_get_free_vars(f[1], bound_vars)
-    if f[0] == 'and' or f[0] == 'or':
-        free_vars = set()
-        for g in f[1]:
-            free_vars = free_vars.union(tableau_get_free_vars(g, bound_vars))
-        return free_vars
-    if f[0] == 'all' or f[0] == 'exists':
-        return tableau_get_free_vars(f[2], bound_vars.union(f[1]))
-    else:
-        return set()
-
-def tableau_get_free_vars_in_term(termlist, bound_vars):
-    free_vars = set()
-    for t in termlist:
-        if variable(t):
-            if t not in bound_vars:
-                free_vars.add(t)
-        if function(t):
-            free_vars = free_vars.union(tableau_get_free_vars_in_term(t[1],
-                bound_vars))
-    return free_vars
-
 def tableau_expand(branch, qdepth):
     return tableau_expand_do([branch], qdepth, 0)
-
-# Returns a tuple the first element of which is the type
-# If 'alpha' or 'beta', the second element is a list
-# of subformulas.
-# If 'gamma' or 'delta', the second element is a tuple
-# contaning the quantified variables and the subformula.
-def tableau_fml_type(f):
-
-    if f[0] == 'not' and f[1][0] == 'not':
-        return ('alpha', [f[1][1]])
-    if f[0] == 'and':
-        return ('alpha', f[1])
-    if f[0] == 'not' and f[1][0] == 'or':
-        return ('alpha', [('not', g) for g in f[1][1]])
-    if f[0] == 'not' and f[1][0] == 'arrow':
-        return ('alpha', [f[1][1], ('not', f[1][2])])
-    
-    if f[0] == 'or':
-        return ('beta', f[1])
-    if f[0] == 'not' and f[1][0] == 'and':
-        return ('beta', [('not', g) for g in f[1][1]])
-    if f[0] == 'arrow':
-        return ('beta', [('not', f[1]), f[2]])
-
-    if f[0] == 'exists':
-        return ('delta', (f[1], f[2]))
-    if f[0] == 'not' and f[1][0] == 'all':
-        return ('delta', (f[1][1], ('not', f[1][2])))
-
-    if f[0] == 'all':
-        return ('gamma', (f[1], f[2]))
-    if f[0] == 'not' and f[1][0] == 'exists':
-        return ('gamma', (f[1][1], ('not', f[1][2])))
-
-    else:
-        return ('literal', f)
 
 def tableau_expand_do(branches, gdepth, skolem_func_counter):
     print('\ntableau_expand_do:')
@@ -936,7 +799,6 @@ def tableau_expand_do(branches, gdepth, skolem_func_counter):
     print()
 
     for branch in branches[:]:
-
         # Handle alpha formulas.
         for f in branch:
             fml_type, subs = tableau_fml_type(f)    
@@ -986,5 +848,115 @@ def tableau_expand_do(branches, gdepth, skolem_func_counter):
                 branches.append(branch)
                 return tableau_expand_do(branches, gdepth, skolem_func_counter)
 
-
     return branches
+
+# Returns a tuple the first element of which is the type
+# If 'alpha' or 'beta', the second element is a list
+# of subformulas.
+# If 'gamma' or 'delta', the second element is a tuple
+# contaning the quantified variables and the subformula.
+def tableau_fml_type(f):
+
+    if f[0] == 'not' and f[1][0] == 'not':
+        return ('alpha', [f[1][1]])
+    if f[0] == 'and':
+        return ('alpha', f[1])
+    if f[0] == 'not' and f[1][0] == 'or':
+        return ('alpha', [('not', g) for g in f[1][1]])
+    if f[0] == 'not' and f[1][0] == 'arrow':
+        return ('alpha', [f[1][1], ('not', f[1][2])])
+    
+    if f[0] == 'or':
+        return ('beta', f[1])
+    if f[0] == 'not' and f[1][0] == 'and':
+        return ('beta', [('not', g) for g in f[1][1]])
+    if f[0] == 'arrow':
+        return ('beta', [('not', f[1]), f[2]])
+
+    if f[0] == 'exists':
+        return ('delta', (f[1], f[2]))
+    if f[0] == 'not' and f[1][0] == 'all':
+        return ('delta', (f[1][1], ('not', f[1][2])))
+
+    if f[0] == 'all':
+        return ('gamma', (f[1], f[2]))
+    if f[0] == 'not' and f[1][0] == 'exists':
+        return ('gamma', (f[1][1], ('not', f[1][2])))
+
+    else:
+        return ('literal', f)
+
+def tableau_skolemize(f, exists_vars, func_counter):
+    free_vars = tableau_get_free_vars(f, exists_vars)
+    used_funcs = skolemize_get_funcs(f)
+
+    g = f
+    for v in exists_vars:
+        while 'f' + str(func_counter) in used_funcs:
+            func_counter += 1
+        skolem_func = 'f' + str(func_counter)
+        used_funcs.append(skolem_func)
+        g = skolemize_replace(g, v, (skolem_func, list(free_vars)))
+    return (g, func_counter + 1)
+
+def tableau_get_free_vars(f, bound_vars):
+    if pred(f):
+        free_vars = set()
+        for term in f[1]:
+            free_vars = free_vars.union(tableau_get_free_vars_in_term(f[1],
+                bound_vars))
+        return free_vars
+    if f[0] == 'not':
+        return tableau_get_free_vars(f[1], bound_vars)
+    if f[0] == 'and' or f[0] == 'or':
+        free_vars = set()
+        for g in f[1]:
+            free_vars = free_vars.union(tableau_get_free_vars(g, bound_vars))
+        return free_vars
+    if f[0] == 'all' or f[0] == 'exists':
+        return tableau_get_free_vars(f[2], bound_vars.union(f[1]))
+    else:
+        return set()
+
+def tableau_get_free_vars_in_term(termlist, bound_vars):
+    free_vars = set()
+    for t in termlist:
+        if variable(t):
+            if t not in bound_vars:
+                free_vars.add(t)
+        if function(t):
+            free_vars = free_vars.union(tableau_get_free_vars_in_term(t[1],
+                bound_vars))
+    return free_vars
+
+def tableau_closed(branches):
+    print('tableau_closed:')
+    for b in branches:
+        print('branch:')
+        for f in b:
+            print('  ', fml_to_str(f))
+    print()
+    substs = []
+    for branch in branches:
+        print('substs so far:', subst_to_str(substs))
+        newsubsts = tableau_branch_closed(branch, substs)
+        print('new substitutions:', subst_to_str(newsubsts))
+        if newsubsts == None:
+            return False
+        substs += newsubsts
+    print('tableau closed with', subst_to_str(substs))
+    return True
+
+def tableau_branch_closed(branch, substs):
+    positives = [f for f in branch if pred(f)]
+    negatives = [f for f in branch if f[0] == 'not']
+
+    for f in positives:
+        for g in negatives:
+            if f[0] == g[1][0]:
+                f_terms = subst_termlist(substs, f[1])
+                g_terms = subst_termlist(substs, g[1][1])
+                newsubsts = unify_termlists(f_terms, g_terms)
+                if newsubsts != None:
+                    return newsubsts
+    return None
