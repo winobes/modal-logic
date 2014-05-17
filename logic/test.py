@@ -529,5 +529,153 @@ def test_pred_tableaux_2():
         print(pred.tableau(f, 10))
         print()
 
+# http://www.cs.miami.edu/~tptp/cgi-bin/SeeTPTP?Category=Problems&Domain=PUZ&File=PUZ031+2.p
+#
+# In order for this to work, the pred() function needs to be adapted: change the line
+#   return f[0] in 'PQRS'
+# to
+#   return f[0][0] in 'PQRS'
+def schubert_steamroller():
+    wolf_type         = ('exists', {'x'}, ('Pwolf',         ['x']))
+    fox_type          = ('exists', {'x'}, ('Pfox',          ['x']))
+    bird_type         = ('exists', {'x'}, ('Pbird',         ['x']))
+    caterpillar_type  = ('exists', {'x'}, ('Pcaterpillar',  ['x']))
+    snail_type        = ('exists', {'x'}, ('Psnail',        ['x']))
+
+    pel47_1_1 = ('all', {'x'}, ('arrow', ('Pwolf',        ['x']), ('Panimal', ['x'])))
+    pel47_2_1 = ('all', {'x'}, ('arrow', ('Pfox',         ['x']), ('Panimal', ['x'])))
+    pel47_3_1 = ('all', {'x'}, ('arrow', ('Pbird',        ['x']), ('Panimal', ['x'])))
+    pel47_4_1 = ('all', {'x'}, ('arrow', ('Pcaterpillar', ['x']), ('Panimal', ['x'])))
+    pel47_4_2 = ('all', {'x'}, ('arrow', ('Psnail',       ['x']), ('Panimal', ['x'])))
+
+    grain_type = ('exists', {'x'}, ('Pgrain', ['x']))
+
+    pel47_7 = ('all', {'x'},
+        ('arrow',
+            ('Panimal', ['x']),
+            ('or', [
+                ('all', {'y'},  ('arrow', ('Pplant', ['y']), ('Peats', ['x', 'y']))),
+                ('all', {'y1'},
+                    ('arrow',
+                        ('and', [
+                            ('Panimal', ['y1']),
+                            ('Pmuch_smaller', ['y1', 'x']),
+                            ('exists', {'z'}, ('and', [('Pplant', ['z']), ('Peats', ['y1', 'z'])]))
+                        ]),
+                        ('Peats', ['x', 'y1'])
+                    )
+                )
+            ])
+        )
+    )
+
+    pel47_8 = ('all', {'x', 'y'},
+        ('arrow',
+            ('and', [('Pbird', ['y']), ('Psnail', ['x'])]),
+            ('Pmuch_smaller', ['x', 'y'])
+        )
+    )
+
+    pel47_8a = ('all', {'x', 'y'},
+        ('arrow',
+            ('and', [('Pbird', ['y'], ('Pcaterpillar', ['x']))]),
+            ('Pmuch_smaller', ['x', 'y'])
+        )
+    )
+
+    pel47_9 = ('all', {'x', 'y'},
+        ('arrow',
+            ('and', [('Pbird', ['x'], ('Pwolf', ['y']))]),
+            ('Pmuch_smaller', ['x', 'y'])
+        )
+    )
+
+    pel47_10 = ('all', {'x', 'y'},
+        ('arrow',
+            ('and', [('Pfox', ['x'], ('Pwolf', ['y']))]),
+            ('Pmuch_smaller', ['x', 'y'])
+        )
+    )
+
+    pel47_11 = ('all', {'x', 'y'},
+        ('arrow',
+            ('and', [('Pwolf', ['x'], ('Pfox', ['y']))]),
+            ('not', ('Peats', ['x', 'y']))
+        )
+    )
+
+    pel47_11a = ('all', {'x', 'y'},
+        ('arrow',
+            ('and', [('Pwolf', ['x'], ('Pgrain', ['y']))]),
+            ('not', ('Peats', ['x', 'y']))
+        )
+    )
+
+    pel47_12 = ('all', {'x', 'y'},
+        ('arrow',
+            ('and', [('Pbird', ['x'], ('Pcaterpillar', ['y']))]),
+            ('Peats', ['x', 'y'])
+        )
+    )
+
+    pel47_13 = ('all', {'x', 'y'},
+        ('arrow',
+            ('and', [('Pbird', ['x'], ('Psnail', ['y']))]),
+            ('not', ('Peats', ['x', 'y']))
+        )
+    )
+
+    pel47_14 = ('all', {'x'},
+        ('arrow',
+            ('Pcaterpillar', ['x']),
+            ('exists', {'y'},
+                ('and', [
+                    ('Pplant', ['y']),
+                    ('Peats', ['x', 'y'])
+                ])
+            )
+        )
+    )
+
+    pel47_14a = ('all', {'x'},
+        ('arrow',
+            ('Psnail', ['x']),
+            ('exists', {'y'},
+                ('and', [
+                    ('Pplant', ['y']),
+                    ('Peats', ['x', 'y'])
+                ])
+            )
+        )
+    )
+
+    conjecture = ('exists', {'x', 'y'},
+        ('and', [
+            ('Panimal', ['x']),
+            ('Panimal', ['y']),
+            ('exists', {'z'},
+                ('and', [
+                    ('Pgrain', ['z']),
+                    ('Peats', ['y', 'z']),
+                    ('Peats', ['x', 'y'])
+                ])
+            )
+        ])
+    )
+
+    premises = [wolf_type, fox_type, bird_type, caterpillar_type, snail_type,
+        pel47_1_1, pel47_2_1, pel47_3_1, pel47_4_1, pel47_4_2, grain_type,
+        pel47_7, pel47_8, pel47_8a, pel47_9, pel47_10, pel47_11, pel47_11a,
+        pel47_12, pel47_13, pel47_14, pel47_14a]
+
+    fml = ('arrow', ('and', premises), conjecture)
+
+    for f in premises:
+        print(pred.fml_to_str(f))
+    print(pred.fml_to_str(conjecture))
+
+    print()
+    print(pred.tableau(fml, 0))
+
 test_pred_tableaux_2()
 
