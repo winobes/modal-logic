@@ -931,9 +931,7 @@ def tableau_expand_do(branches, gdepth, skolem_func_counter):
 
         # Handle alpha formulas.
         for f in branch:
-            tmp = tableau_fml_type(f)    
-            subs = tmp[1]
-            fml_type = tmp[0]
+            subs, fml_type = tableau_fml_type(f)    
 
             if fml_type == 'alpha':
                 branches.remove(branch)
@@ -943,9 +941,7 @@ def tableau_expand_do(branches, gdepth, skolem_func_counter):
 
         # Handle beta formulas.
         for f in branch:
-            tmp = tableau_fml_type(f)    
-            subs = tmp[1]
-            fml_type = tmp[0]
+            subs, fml_type = tableau_fml_type(f)    
 
             if fml_type == 'beta':
                 branches.remove(branch)
@@ -956,14 +952,12 @@ def tableau_expand_do(branches, gdepth, skolem_func_counter):
 
         # Handle delta formulas (before gamma formulas).
         for f in branch:
-            tmp = tableau_fml_type(f)    
-            sub = tmp[1]
-            fml_type = tmp[0]
+            subs, fml_type = tableau_fml_type(f)    
 
             if fml_type == 'delta':
                 branches.remove(branch)
                 branch.remove(f)
-                g, skolem_func_counter = tableau_skolemize(sub[1], sub[0],
+                g, skolem_func_counter = tableau_skolemize(subs[1], subs[0],
                     skolem_func_counter)
                 branch.append(g)
                 branches.append(branch)
@@ -971,14 +965,12 @@ def tableau_expand_do(branches, gdepth, skolem_func_counter):
 
         # Handle gamma formulas.
         for f in branch:
-            tmp = tableau_fml_type(f)
-            sub = tmp[1]
-            fml_type = tmp[0]
+            subs, fml_type = tableau_fml_type(f)
 
             if fml_type == 'gamma':
                 branches.remove(branch)
                 branch.remove(f)
-                branch.append(sub[1])
+                branch.append(subs[1])
                 branches.append(branch)
                 return tableau_expand_do(branches, gdepth, skolem_func_counter)
 
