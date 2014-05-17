@@ -594,7 +594,7 @@ def variables_in_term(term):
 def subst_termlist(subst, termlist):
     return [subst_term(subst, t) for t in termlist]
 
-# Apply a substituion to a term.
+# Apply a substitution to a term.
 def subst_term(subst, term):
     if variable(term):
         return subst_var(subst, term)
