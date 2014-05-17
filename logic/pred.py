@@ -809,43 +809,53 @@ def cnf_remove_dups(f):
 #            return [branch + [g] for g in f[1]]
 #    return [branch]
 
-def tableau_branch_closed(branch):
-    
+def tableau_closed(branches):
+    for b in branches:
+        print('branch:')
+        for f in b:
+            print('  ', fml_to_str(f))
+    print()
+    substs = []
+    for branch in branches:
+        print('substs so far:', subst_to_str(substs))
+        newsubsts = tableau_branch_closed(branch, substs)
+        print('new substitutions:', subst_to_str(newsubsts))
+        if newsubsts == None:
+            return False
+        substs += newsubsts
+    print('tableau closed with', subst_to_str(substs))
+    return True
+
+def tableau_branch_closed(branch, substs):
     positives = [f for f in branch if pred(f)]
     negatives = [f for f in branch if f[0] == 'not']
-    
+
     for f in positives:
         for g in negatives:
             if f[0] == g[1][0]:
-                s = unify_termlists(f[1], g[1][1])
-                if s != None:
-                    print('%s and %s unified by %s' % (fml_to_str(f),
-                        fml_to_str(g), subst_to_str(s)))
-                    return True
-    return False
+                f_terms = subst_termlist(substs, f[1])
+                g_terms = subst_termlist(substs, g[1][1])
+                newsubsts = unify_termlists(f_terms, g_terms)
+                if newsubsts != None:
+                    return newsubsts
+    return None
 
 def tableau(f, gdepth):
     branches = tableau_expand([('not', f)], gdepth)
-    #return all(tableau_branch_closed(branch) for branch in branches)
-    for branch in branches:
-        if not tableau_branch_closed(branch):
-            print("branch not closed:", branch)
-            return False
-    return True
+    return tableau_closed(branches)
 
-def tableau_skolemize(f, exists_vars):
+def tableau_skolemize(f, exists_vars, func_counter):
     free_vars = tableau_get_free_vars(f, exists_vars)
     used_funcs = skolemize_get_funcs(f)
 
     g = f
-    i = 0
     for v in exists_vars:
-        while 'f' + str(i) in used_funcs:
-            i += 1
-        skolem_func = 'f' + str(i)
+        while 'f' + str(func_counter) in used_funcs:
+            func_counter += 1
+        skolem_func = 'f' + str(func_counter)
         used_funcs.append(skolem_func)
         g = skolemize_replace(g, v, (skolem_func, list(free_vars)))
-    return g
+    return (g, func_counter + 1)
 
 def tableau_get_free_vars(f, bound_vars):
     if pred(f):
@@ -878,7 +888,7 @@ def tableau_get_free_vars_in_term(termlist, bound_vars):
     return free_vars
 
 def tableau_expand(branch, qdepth):
-    return tableau_expand_do([branch], qdepth)
+    return tableau_expand_do([branch], qdepth, 0)
 
 # Returns a tuple the first element of which is the type
 # If 'alpha' or 'beta', the second element is a list
@@ -916,8 +926,7 @@ def tableau_fml_type(f):
     else:
         return ('literal', f)
 
-def tableau_expand_do(branches, gdepth):
-
+def tableau_expand_do(branches, gdepth, skolem_func_counter):
     for branch in branches[:]:
 
         # Handle alpha formulas.
@@ -930,7 +939,7 @@ def tableau_expand_do(branches, gdepth):
                 branches.remove(branch)
                 branch.remove(f)
                 branches.append(branch + subs)
-                return tableau_expand_do(branches, gdepth)
+                return tableau_expand_do(branches, gdepth, skolem_func_counter)
 
         # Handle beta formulas.
         for f in branch:
@@ -943,7 +952,7 @@ def tableau_expand_do(branches, gdepth):
                 branch.remove(f)
                 for g in subs:
                     branches.append(branch + [g])
-                return tableau_expand_do(branches, gdepth)
+                return tableau_expand_do(branches, gdepth, skolem_func_counter)
 
         # Handle delta formulas (before gamma formulas).
         for f in branch:
@@ -954,9 +963,11 @@ def tableau_expand_do(branches, gdepth):
             if fml_type == 'delta':
                 branches.remove(branch)
                 branch.remove(f)
-                branch.append(tableau_skolemize(sub[1], sub[0]))
+                g, skolem_func_counter = tableau_skolemize(sub[1], sub[0],
+                    skolem_func_counter)
+                branch.append(g)
                 branches.append(branch)
-                return tableau_expand_do(branches, gdepth)
+                return tableau_expand_do(branches, gdepth, skolem_func_counter)
 
         # Handle gamma formulas.
         for f in branch:
@@ -969,7 +980,7 @@ def tableau_expand_do(branches, gdepth):
                 branch.remove(f)
                 branch.append(sub[1])
                 branches.append(branch)
-                return tableau_expand_do(branches, gdepth)
+                return tableau_expand_do(branches, gdepth, skolem_func_counter)
 
 
     return branches
