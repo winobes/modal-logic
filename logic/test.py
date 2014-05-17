@@ -45,7 +45,8 @@ def compare_provers(provers, fml_to_str, fmls):
 # phi is entailed by sigma using the desired proof method 
 def check_entailment(sigma, phi, proof_method):
     f = ('arrow', ('and', list(sigma)), phi)
-    return proof_method(f)
+    # The tableaux proof method needs an additional argument.
+    return proof_method(f, 0)
 
 
 def model_checking():
@@ -436,7 +437,7 @@ def print_theories():
 def test8():
     phi = ('all', {'x', 'y', 'z'}, ('arrow', ('and', [('R', ['x','y']), ('R', ['y', 'z'])]),
                                         ('not', ('R', ['z', 'x']))))
-    print(pred.check_entailment(theories()['Strict Partial Order'], phi, pred.tableau))
+    print(check_entailment(theories()['Strict Partial Order'], phi, pred.tableau))
 
 def totp_exercises():
     a = axioms()
@@ -445,21 +446,21 @@ def totp_exercises():
     print_theories()
 
     print('transitive, symmetric, serial |- reflexive')
-    print(pred.check_entailment([a['transitive'], a['symmetric'], a['serial']], a['reflexive'], pred.tableau))
+    print(check_entailment([a['transitive'], a['symmetric'], a['serial']], a['reflexive'], pred.tableau))
     print()
 
     print('Strict Partial Order |- asymmetric')
-    print(pred.check_entailment(t['Strict Partial Order'], a['asymmetric'], pred.tableau))
+    print(check_entailment(t['Strict Partial Order'], a['asymmetric'], pred.tableau))
     print()
 
     print('asymmetric |- irreflexive')
-    print(pred.check_entailment([a['asymmetric']], a['irreflexive'], pred.tableau))
+    print(check_entailment([a['asymmetric']], a['irreflexive'], pred.tableau))
     print()
 
     print('Semi-order 1 |- Semi-order 2')
-    print(pred.check_entailment(t['Semi-order1'], ('and', t['Semi-order2']), pred.tableau))
+    print(check_entailment(t['Semi-order1'], ('and', t['Semi-order2']), pred.tableau))
     print('Semi-order 2 |- Semi-order 1')
-    print(pred.check_entailment(t['Semi-order2'], ('and', t['Semi-order1']), pred.tableau))
+    print(check_entailment(t['Semi-order2'], ('and', t['Semi-order1']), pred.tableau))
     print()
 
 def test_pred_tableaux_2():
