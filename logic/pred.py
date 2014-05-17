@@ -810,6 +810,7 @@ def cnf_remove_dups(f):
 #    return [branch]
 
 def tableau_closed(branches):
+    print('tableau_closed:')
     for b in branches:
         print('branch:')
         for f in b:
@@ -927,6 +928,13 @@ def tableau_fml_type(f):
         return ('literal', f)
 
 def tableau_expand_do(branches, gdepth, skolem_func_counter):
+    print('\ntableau_expand_do:')
+    for branch in branches:
+        print('branch:')
+        for fml in branch:
+            print('  ', fml_to_str(fml))
+    print()
+
     for branch in branches[:]:
 
         # Handle alpha formulas.
@@ -934,6 +942,7 @@ def tableau_expand_do(branches, gdepth, skolem_func_counter):
             fml_type, subs = tableau_fml_type(f)    
 
             if fml_type == 'alpha':
+                print('alpha rule on', fml_to_str(f))
                 branches.remove(branch)
                 branch.remove(f)
                 branches.append(branch + subs)
@@ -944,6 +953,7 @@ def tableau_expand_do(branches, gdepth, skolem_func_counter):
             fml_type, subs = tableau_fml_type(f)    
 
             if fml_type == 'beta':
+                print('beta rule on', fml_to_str(f))
                 branches.remove(branch)
                 branch.remove(f)
                 for g in subs:
@@ -955,6 +965,7 @@ def tableau_expand_do(branches, gdepth, skolem_func_counter):
             fml_type, subs = tableau_fml_type(f)    
 
             if fml_type == 'delta':
+                print('delta rule on', fml_to_str(f))
                 branches.remove(branch)
                 branch.remove(f)
                 g, skolem_func_counter = tableau_skolemize(subs[1], subs[0],
@@ -968,6 +979,7 @@ def tableau_expand_do(branches, gdepth, skolem_func_counter):
             fml_type, subs = tableau_fml_type(f)
 
             if fml_type == 'gamma':
+                print('gamma rule on', fml_to_str(f))
                 branches.remove(branch)
                 branch.remove(f)
                 branch.append(subs[1])
