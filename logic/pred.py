@@ -931,7 +931,7 @@ def tableau_expand_do(branches, gdepth, skolem_func_counter):
 
         # Handle alpha formulas.
         for f in branch:
-            subs, fml_type = tableau_fml_type(f)    
+            fml_type, subs = tableau_fml_type(f)    
 
             if fml_type == 'alpha':
                 branches.remove(branch)
@@ -941,7 +941,7 @@ def tableau_expand_do(branches, gdepth, skolem_func_counter):
 
         # Handle beta formulas.
         for f in branch:
-            subs, fml_type = tableau_fml_type(f)    
+            fml_type, subs = tableau_fml_type(f)    
 
             if fml_type == 'beta':
                 branches.remove(branch)
@@ -952,7 +952,7 @@ def tableau_expand_do(branches, gdepth, skolem_func_counter):
 
         # Handle delta formulas (before gamma formulas).
         for f in branch:
-            subs, fml_type = tableau_fml_type(f)    
+            fml_type, subs = tableau_fml_type(f)    
 
             if fml_type == 'delta':
                 branches.remove(branch)
@@ -965,7 +965,7 @@ def tableau_expand_do(branches, gdepth, skolem_func_counter):
 
         # Handle gamma formulas.
         for f in branch:
-            subs, fml_type = tableau_fml_type(f)
+            fml_type, subs = tableau_fml_type(f)
 
             if fml_type == 'gamma':
                 branches.remove(branch)
