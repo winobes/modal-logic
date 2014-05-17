@@ -516,7 +516,12 @@ def test_pred_tableaux_2():
         ('all', {'x', 'y', 'z'},
             ('arrow',
                 ('and', [('R', ['x', 'y']), ('R', ['y', 'z'])]),
-                ('R', ['x', 'z'])))
+                ('R', ['x', 'z']))),
+            
+        ('arrow', 
+            ('all', {'x'}, ('or', [('P', ['x']), ('Q', ['x'])])), 
+            ('or', [('all', {'x'}, ('P', ['x'])), ('all', {'x'}, ('Q', ['x']))])
+        )
     ]
 
     for f in fmls:
@@ -525,3 +530,4 @@ def test_pred_tableaux_2():
         print()
 
 test_pred_tableaux_2()
+
