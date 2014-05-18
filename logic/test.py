@@ -450,7 +450,7 @@ def totp_exercises():
     print('transitive, symmetric, serial |- reflexive')
     print(check_entailment([a['transitive'], a['symmetric'], a['serial']], a['reflexive'], pred.tableau))
     print()
-
+    exit()
     print('Strict Partial Order |- asymmetric')
     print(check_entailment(t['Strict Partial Order'], a['asymmetric'], pred.tableau))
     print()
@@ -680,6 +680,6 @@ def schubert_steamroller():
     print()
     print(pred.tableau(fml, 0))
 
-util.debug = 0
+util.debug = 1
 
 totp_exercises()

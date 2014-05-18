@@ -1,5 +1,10 @@
 import util
 
+
+#
+# Utilitiy functions for predicate logic
+#
+
 def pred(f):
     return f[0] in 'PQRS'
 
@@ -16,54 +21,48 @@ def variable(x):
 def function(x):
     return isinstance(x, tuple) and x[0][0] in 'abcdfghj'
 
-# Convert a formula to a string.
-def fml_to_str(f):
+# Return a set of free variables from a formula (assuming bound
+# vars are initially considered bound).
+def get_free_vars(f, bound_vars):
     if pred(f):
-        s = f[0] + args_to_str(f[1])
-    elif f[0] == 'not':
-        s = '~' + subfml_to_str(f[1])
-    elif f[0] == 'and' or f[0] == 'or':
-        s = ''
-        for i in range(len(f[1])):
-            s += subfml_to_str(f[1][i])
-            if i != len(f[1]) - 1:
-                s += ' & ' if f[0] == 'and' else ' V '
-    elif f[0] == 'arrow':
-        s = subfml_to_str(f[1]) + ' -> ' + subfml_to_str(f[2])
-    elif f[0] == 'all' or f[0] == 'exists':
-        s = 'A' if f[0] == 'all' else 'E'
-        for t in f[1]:
-            s += t
-        s += subfml_to_str(f[2])
+        free_vars = set()
+        for term in f[1]:
+            free_vars = free_vars.union(get_free_vars_in_term(f[1],
+                bound_vars))
+        return free_vars
+    if f[0] == 'not':
+        return get_free_vars(f[1], bound_vars)
+    if f[0] == 'and' or f[0] == 'or':
+        free_vars = set()
+        for g in f[1]:
+            free_vars = free_vars.union(get_free_vars(g, bound_vars))
+        return free_vars
+    if f[0] == 'all' or f[0] == 'exists':
+        return get_free_vars(f[2], bound_vars.union(f[1]))
     else:
-        raise ValueError('unknown operator: %s' % f[0])
+        return set()
 
-    return s
+# Herper functtion for get_free_vars
+def get_free_vars_in_term(termlist, bound_vars):
+    free_vars = set()
+    for t in termlist:
+        if variable(t):
+            if t not in bound_vars:
+                free_vars.add(t)
+        if function(t):
+            free_vars = free_vars.union(get_free_vars_in_term(t[1],
+                bound_vars))
+    return free_vars
 
-# Helper function for fml_to_str(): enclose a subformula in parentheses if
-# necessary.
-def subfml_to_str(f):
-    if (f[0] == 'and' or f[0] == 'or') and len(f[1]) != 1:
-        return '(' + fml_to_str(f) + ')'
-    if f[0] == 'arrow':
-        return '(' + fml_to_str(f) + ')'
-    return fml_to_str(f)
-
-# Helper function for fml_to_str(): convert a list of predicate or function
-# arguments to a string.
-def args_to_str(a):
-    s = '('
-    for x in a:
-        if function(x):
-            s += x[0]
-            if not constant(x):
-                s += args_to_str(x[1]) 
-        else: 
-            s += str(x)
-        s += ', '
-    s = s[:-2]
-    s += ')'
-    return s
+# Return the set of all variables occurring in a term.
+def variables_in_term(term):
+    if variable(term):
+        return {term}
+    else:
+        var = set()
+        for t in term[1]:
+            var |= variables_in_term(t)
+        return var
 
 # Returns a dictionary from predicates to their arities
 def get_preds(f):
@@ -148,6 +147,110 @@ def get_functions(f):
     if f[0] == 'all' or f[0] == 'exists':
         return get_functions(f[2])
 
+# Helper function for skolemize(): return a list of all function symbols used
+# in the formula f.
+def skolemize_get_funcs(f):
+    if pred(f):
+        return [a[0] for a in f[1] if function(a)]
+    if f[0] == 'not':
+        return skolemize_get_funcs(f[1])
+    if f[0] == 'and' or f[0] == 'or':
+        l = []
+        for g in f[1]:
+            l.append(skolemize_get_funcs(g))
+        return l
+    if f[0] == 'arrow':
+        return skolemize_get_funcs(f[1]) + skolemize_get_funcs(f[2])
+    if f[0] == 'all' or f[0] == 'exists':
+        return skolemize_get_funcs(f[2])
+    raise ValueError('unknown operator: %s' % f[0])
+
+
+#
+# Printing
+#
+
+# Convert a formula to a string.
+def fml_to_str(f):
+    if pred(f):
+        s = f[0] + args_to_str(f[1])
+    elif f[0] == 'not':
+        s = '~' + subfml_to_str(f[1])
+    elif f[0] == 'and' or f[0] == 'or':
+        s = ''
+        for i in range(len(f[1])):
+            s += subfml_to_str(f[1][i])
+            if i != len(f[1]) - 1:
+                s += ' & ' if f[0] == 'and' else ' V '
+    elif f[0] == 'arrow':
+        s = subfml_to_str(f[1]) + ' -> ' + subfml_to_str(f[2])
+    elif f[0] == 'all' or f[0] == 'exists':
+        s = 'A' if f[0] == 'all' else 'E'
+        for t in f[1]:
+            s += t
+        s += subfml_to_str(f[2])
+    else:
+        raise ValueError('unknown operator: %s' % f[0])
+
+    return s
+
+# Helper function for fml_to_str(): enclose a subformula in parentheses if
+# necessary.
+def subfml_to_str(f):
+    if (f[0] == 'and' or f[0] == 'or') and len(f[1]) != 1:
+        return '(' + fml_to_str(f) + ')'
+    if f[0] == 'arrow':
+        return '(' + fml_to_str(f) + ')'
+    return fml_to_str(f)
+
+# Helper function for fml_to_str(): convert a list of predicate or function
+# arguments to a string.
+def args_to_str(a):
+    s = '('
+    for x in a:
+        if function(x):
+            s += x[0]
+            if not constant(x):
+                s += args_to_str(x[1]) 
+        else: 
+            s += str(x)
+        s += ', '
+    s = s[:-2]
+    s += ')'
+    return s
+
+# Convert a substitution to a string.
+def subst_to_str(subst):
+    if subst == None:
+        return '{}'
+    string = '{'
+    for s in subst:
+        string += s[0] + ' -> ' + term_to_str(s[1]) + ', '
+    if len(string) > 1:
+        string = string[:-2]
+    string += '}'
+    return string
+
+# Convert a term to a string.
+def term_to_str(term):
+    if variable(term):
+        return term
+    else:
+        if len(term[1]) == 0:
+            return term[0]
+        else:
+            s = term[0] + '('
+            for t in term[1]:
+                s += term_to_str(t) + ', '
+            s = s[:-2] + ')'
+            return s
+
+
+
+#
+# Substitution
+#
+
 # Helper function for safe(): replace every occurrence of the variable v with
 # w.
 def safe_replace(f, v, w):
@@ -173,24 +276,6 @@ def replace_terms(t, v, w):
         return (t[0], [replace_terms(s, v, w) for s in t[1]])
     raise ValueError('expected a term, but got', t)
 
-# Helper function for skolemize(): return a list of all function symbols used
-# in the formula f.
-def skolemize_get_funcs(f):
-    if pred(f):
-        return [a[0] for a in f[1] if function(a)]
-    if f[0] == 'not':
-        return skolemize_get_funcs(f[1])
-    if f[0] == 'and' or f[0] == 'or':
-        l = []
-        for g in f[1]:
-            l.append(skolemize_get_funcs(g))
-        return l
-    if f[0] == 'arrow':
-        return skolemize_get_funcs(f[1]) + skolemize_get_funcs(f[2])
-    if f[0] == 'all' or f[0] == 'exists':
-        return skolemize_get_funcs(f[2])
-    raise ValueError('unknown operator: %s' % f[0])
-
 # Helper function for handling gamma formulas
 def parametrize(f, v, parm):
     return skolemize_replace(f, v, parm)
@@ -209,6 +294,32 @@ def skolemize_replace(f, v, func):
     if f[0] == 'all' or f[0] == 'exists':
         return (f[0], f[1], skolemize_replace(f[2], v, func))
     raise ValueError('unknown operator: %s' % f[0])
+
+# Return the composition of two substitutions. That is, return the substitution
+# equivalent to the application of s1 after s2.
+def compose_subst(s1, s2):
+    return s1 + [(s[0], subst_term(s1, s[1])) for s in s2]
+
+# Apply a substitution to a list of terms.
+def subst_termlist(subst, termlist):
+    return [subst_term(subst, t) for t in termlist]
+
+# Apply a substitution to a term.
+def subst_term(subst, term):
+    if variable(term):
+        return subst_var(subst, term)
+    else:
+        return (term[0], subst_termlist(subst, term[1]))
+
+# Apply a substitution to a variable.
+def subst_var(subst, var):
+    if subst == []:
+        return var
+    if var == subst[0][0]:
+        return subst[0][1]
+    else:
+        return subst_var(subst[1:], var)
+
 
 #
 # Unification
@@ -261,76 +372,6 @@ def unify_terms(t1, t2):
             return None
         else:
             return unify_termlists(t1[1], t2[1])
-
-# Return the composition of two substitutions. That is, return the substitution
-# equivalent to the application of s1 after s2.
-def compose_subst(s1, s2):
-    return s1 + [(s[0], subst_term(s1, s[1])) for s in s2]
-
-# Return the set of all variables occurring in a term.
-def variables_in_term(term):
-    if variable(term):
-        return {term}
-    else:
-        var = set()
-        for t in term[1]:
-            var |= variables_in_term(t)
-        return var
-
-# Apply a substitution to a list of terms.
-def subst_termlist(subst, termlist):
-    return [subst_term(subst, t) for t in termlist]
-
-# Apply a substitution to a term.
-def subst_term(subst, term):
-    if variable(term):
-        return subst_var(subst, term)
-    else:
-        return (term[0], subst_termlist(subst, term[1]))
-
-# Apply a substitution to a variable.
-def subst_var(subst, var):
-    if subst == []:
-        return var
-    if var == subst[0][0]:
-        return subst[0][1]
-    else:
-        return subst_var(subst[1:], var)
-
-# Convert a substitution to a string.
-def subst_to_str(subst):
-    if subst == None:
-        return '{}'
-    string = '{'
-    for s in subst:
-        string += s[0] + ' -> ' + term_to_str(s[1]) + ', '
-    if len(string) > 1:
-        string = string[:-2]
-    string += '}'
-    return string
-
-# Convert a list of terms to a string.
-def termlist_to_str(termlist):
-    s = ''
-    for t in termlist:
-        s += term_to_str(t) + ', '
-    s = s[:-2]
-    return s
-
-# Convert a term to a string.
-def term_to_str(term):
-    if variable(term):
-        return term
-    else:
-        if len(term[1]) == 0:
-            return term[0]
-        else:
-            s = term[0] + '('
-            for t in term[1]:
-                s += term_to_str(t) + ', '
-            s = s[:-2] + ')'
-            return s
-
 
 #
 # Tableaux
@@ -445,7 +486,7 @@ def tableau_fml_type(f):
         return ('literal', f)
 
 def tableau_skolemize(f, exists_vars, func_counter):
-    free_vars = tableau_get_free_vars(f, exists_vars)
+    free_vars = get_free_vars(f, exists_vars)
     used_funcs = skolemize_get_funcs(f)
 
     g = f
@@ -456,36 +497,6 @@ def tableau_skolemize(f, exists_vars, func_counter):
         used_funcs.append(skolem_func)
         g = skolemize_replace(g, v, (skolem_func, list(free_vars)))
     return (g, func_counter + 1)
-
-def tableau_get_free_vars(f, bound_vars):
-    if pred(f):
-        free_vars = set()
-        for term in f[1]:
-            free_vars = free_vars.union(tableau_get_free_vars_in_term(f[1],
-                bound_vars))
-        return free_vars
-    if f[0] == 'not':
-        return tableau_get_free_vars(f[1], bound_vars)
-    if f[0] == 'and' or f[0] == 'or':
-        free_vars = set()
-        for g in f[1]:
-            free_vars = free_vars.union(tableau_get_free_vars(g, bound_vars))
-        return free_vars
-    if f[0] == 'all' or f[0] == 'exists':
-        return tableau_get_free_vars(f[2], bound_vars.union(f[1]))
-    else:
-        return set()
-
-def tableau_get_free_vars_in_term(termlist, bound_vars):
-    free_vars = set()
-    for t in termlist:
-        if variable(t):
-            if t not in bound_vars:
-                free_vars.add(t)
-        if function(t):
-            free_vars = free_vars.union(tableau_get_free_vars_in_term(t[1],
-                bound_vars))
-    return free_vars
 
 def tableau_closed(branches):
     util.dprint('tableau_closed:')
