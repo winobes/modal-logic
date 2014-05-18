@@ -68,7 +68,7 @@ def variables_in_term(term):
 # in the formula f.
 def get_funcs(f):
     if pred(f):
-        return [a[0] for a in f[1] if function(a)]
+        return flatten([get_funcs_in_term(t) for t in f[1]])
     if f[0] == 'not':
         return get_funcs(f[1])
     if f[0] == 'and' or f[0] == 'or':
@@ -82,6 +82,17 @@ def get_funcs(f):
         return get_funcs(f[2])
     raise ValueError('unknown operator: %s' % f[0])
 
+# Helper function for get_funcs
+def get_funcs_in_term(t):
+    if variable(t):
+        return []
+    if function(t):
+        return [t[0]] + flatten([get_funcs_in_term(s) for s in t[1]])
+    pass
+
+# Turns a list of lists of things into a list of things
+def flatten(l):
+    return [item for sublist in l for item in sublist]
 
 #
 # Printing
