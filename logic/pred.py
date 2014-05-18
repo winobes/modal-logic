@@ -63,7 +63,6 @@ def variables_in_term(term):
         for t in term[1]:
             var |= variables_in_term(t)
         return var
-bles(f[2])
 
 # Return a dictionary from functions to their arities.
 def get_functions(f):
@@ -89,21 +88,25 @@ def get_functions(f):
 
 # Helper function for skolemize(): return a list of all function symbols used
 # in the formula f.
-def skolemize_get_funcs(f):
+def get_funcs(f):
     if pred(f):
         return [a[0] for a in f[1] if function(a)]
     if f[0] == 'not':
-        return skolemize_get_funcs(f[1])
+        return get_funcs(f[1])
     if f[0] == 'and' or f[0] == 'or':
         l = []
         for g in f[1]:
-            l.append(skolemize_get_funcs(g))
+            l.append(get_funcs(g))
         return l
     if f[0] == 'arrow':
-        return skolemize_get_funcs(f[1]) + skolemize_get_funcs(f[2])
+        return get_funcs(f[1]) + get_funcs(f[2])
     if f[0] == 'all' or f[0] == 'exists':
-        return skolemize_get_funcs(f[2])
+        return get_funcs(f[2])
     raise ValueError('unknown operator: %s' % f[0])
+
+# Helper function for get_funcs
+def get_fucs_in_term(t):
+    pass
 
 
 #
@@ -417,7 +420,7 @@ def tableau_fml_type(f):
 
 def tableau_skolemize(f, exists_vars, func_counter):
     free_vars = get_free_vars(f, exists_vars)
-    used_funcs = skolemize_get_funcs(f)
+    used_funcs = get_funcs(f)
 
     g = f
     for v in exists_vars:
