@@ -169,35 +169,6 @@ def subst_to_str(subst):
 # Substitution
 #
 
-def replace_terms(t, v, w):
-    if variable(t):
-        if t == v:
-            return w 
-        else:
-            return t
-    elif function(t):
-        return (t[0], [replace_terms(s, v, w) for s in t[1]])
-    raise ValueError('expected a term, but got', t)
-
-# Helper function for handling gamma formulas
-def parametrize(f, v, parm):
-    return skolemize_replace(f, v, parm)
-
-# Helper function for skolemize():
-def skolemize_replace(f, v, func):
-    if pred(f):
-        return (f[0], [replace_terms(t, v, func) if t != v else func for t in f[1]])
-    if f[0] == 'not':
-        return ('not', skolemize_replace(f[1], v, func))
-    if f[0] == 'and' or f[0] == 'or':
-        return (f[0], [skolemize_replace(g, v, func) for g in f[1]])
-    if f[0] == 'arrow':
-        return ('arrow', skolemize_replace(f[1], v, func),
-            skolemize_replace(f[2], v, func))
-    if f[0] == 'all' or f[0] == 'exists':
-        return (f[0], f[1], skolemize_replace(f[2], v, func))
-    raise ValueError('unknown operator: %s' % f[0])
-
 # Return the composition of two substitutions. That is, return the substitution
 # equivalent to the application of s1 after s2.
 def compose_subst(s1, s2):
@@ -205,6 +176,22 @@ def compose_subst(s1, s2):
     comp.update(s1)
     comp.update({t:subst_term(s1, s2[t]) for t in s2})
     return comp 
+
+# Helper function for skolemize():
+def subst_formula(subst, f):
+    if pred(f):
+        return (f[0], subst_termlist(subst, f[1]))
+    if f[0] == 'not':
+        return ('not', subst_formula(subst, f[1]))
+    if f[0] == 'and' or f[0] == 'or':
+        return (f[0], [subst_formula(subst, g) for g in f[1]])
+    if f[0] == 'arrow':
+        return ('arrow', subst_formula(subst, f[1]),
+            subst_formula(subst, f[2]))
+    if f[0] == 'all' or f[0] == 'exists':
+        return (f[0], f[1], 
+            subst_formula({v:subst[v] for v in subst if not v in f[1]}, f[2]))
+    raise ValueError('unknown operator: %s' % f[0])
 
 # Apply a substitution to a list of terms.
 def subst_termlist(subst, termlist):
@@ -345,7 +332,7 @@ def tableau_expand_do(branches, gdepth, skolem_func_counter, uni_var_counter):
                 for var in subs[0]:
                     parameter =  'x' + str(uni_var_counter)
                     uni_var_counter += 1
-                    new_f = parametrize(new_f, var, parameter)
+                    new_f = subst_formula({var:parameter}, new_f)
                 branch.append(new_f)
                 branches.append(branch)
                 return tableau_expand_do(branches, gdepth, skolem_func_counter, uni_var_counter)
@@ -398,7 +385,7 @@ def tableau_skolemize(f, exists_vars, func_counter):
             func_counter += 1
         skolem_func = 'f' + str(func_counter)
         used_funcs.append(skolem_func)
-        g = skolemize_replace(g, v, (skolem_func, list(free_vars)))
+        g = subst_formula({v:(skolem_func, list(free_vars))}, g)
     return (g, func_counter + 1)
 
 def tableau_closed(branches):
