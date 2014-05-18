@@ -157,8 +157,8 @@ def subst_to_str(subst):
     if subst == None:
         return '{}'
     string = '{'
-    for s in subst:
-        string += s[0] + ' -> ' + term_to_str(s[1]) + ', '
+    for v in subst:
+        string += v + ' -> ' + term_to_str(subst[v]) + ', '
     if len(string) > 1:
         string = string[:-2]
     string += '}'
@@ -216,7 +216,10 @@ def skolemize_replace(f, v, func):
 # Return the composition of two substitutions. That is, return the substitution
 # equivalent to the application of s1 after s2.
 def compose_subst(s1, s2):
-    return s1 + [(s[0], subst_term(s1, s[1])) for s in s2]
+    comp = {}
+    comp.update(s1)
+    comp.update({t:subst_term(s1, s2[t]) for t in s2})
+    return comp 
 
 # Apply a substitution to a list of terms.
 def subst_termlist(subst, termlist):
@@ -231,13 +234,11 @@ def subst_term(subst, term):
 
 # Apply a substitution to a variable.
 def subst_var(subst, var):
-    if subst == []:
-        return var
-    if var == subst[0][0]:
-        return subst[0][1]
+    if var in subst:
+        return subst[var]
     else:
-        return subst_var(subst[1:], var)
-
+        return var
+     
 
 #
 # Unification
@@ -246,18 +247,17 @@ def subst_var(subst, var):
 
 # - A list of terms simply is the list of arguments of a predicate or a
 #   function.
-# - A substitution is a list of pairs. For each pair, the first element is a
-#   variable and the second element a term.
+# - A substitution is a dictionary mapping from variables to terms
 
 # Return a substitution that unifies two lists of terms. Return None if no such
 # substitution exists.
 def unify_termlists(t1, t2):
     if len(t1) == len(t2) == 0:
-        return []
+        return {}
     if len(t1) != len(t2):
         return None
     else:
-        subst = []
+        subst = {}
         for (u1, u2) in zip(t1, t2):
             v1 = subst_term(subst, u1)
             v2 = subst_term(subst, u2)
@@ -272,19 +272,19 @@ def unify_termlists(t1, t2):
 def unify_terms(t1, t2):
     if variable(t1) and variable(t2):
         if t1 == t2:
-            return []
+            return {}
         else:
-            return [(t1, t2)]
+            return {t1:t2}
     if variable(t1) and not variable(t2):
         if t1 in variables_in_term(t2):
             return None
         else:
-            return [(t1, t2)]
+            return {t1:t2}
     if not variable(t1) and variable(t2):
         if t2 in variables_in_term(t1):
             return None
         else:
-            return [(t2, t1)]
+            return {t2:t1}
     else:
         if t1[0] != t2[0]:
             return None
@@ -423,14 +423,14 @@ def tableau_closed(branches):
         for f in b:
             util.dprint('  ', fml_to_str(f))
     util.dprint()
-    substs = []
+    substs = {}
     for branch in branches:
         util.dprint('substs so far:', subst_to_str(substs))
         newsubsts = tableau_branch_closed(branch, substs)
         util.dprint('new substitutions:', subst_to_str(newsubsts))
         if newsubsts == None:
             return False
-        substs += newsubsts
+        substs.update(newsubsts)
     util.dprint('tableau closed with', subst_to_str(substs))
     return True
 
