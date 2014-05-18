@@ -214,6 +214,16 @@ def args_to_str(a):
     s += ')'
     return s
 
+# Convert a term to a string.
+def term_to_str(term):
+    if variable(term):
+        return term
+    else:
+        if len(term[1]) == 0:
+            return term[0]
+        else:
+            return term[0] + args_to_str(term[1])
+
 # Convert a substitution to a string.
 def subst_to_str(subst):
     if subst == None:
@@ -225,17 +235,6 @@ def subst_to_str(subst):
         string = string[:-2]
     string += '}'
     return string
-
-# Convert a term to a string.
-def term_to_str(term):
-    if variable(term):
-        return term
-    else:
-        if len(term[1]) == 0:
-            return term[0]
-        else:
-            return term[0] + args_to_str(term[1])
-
 
 
 #
@@ -338,6 +337,7 @@ def unify_termlists(t1, t2):
             if newsubst == None:
                 return None
             subst = compose_subst(newsubst, subst)
+        print("SUTHESOUHS>>>>>>>>>>>", subst)
         return subst
 
 # Return a substitution that unifies two terms. Return None if no such
