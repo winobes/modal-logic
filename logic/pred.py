@@ -208,12 +208,7 @@ def subfml_to_str(f):
 def args_to_str(a):
     s = '('
     for x in a:
-        if function(x):
-            s += x[0]
-            if not constant(x):
-                s += args_to_str(x[1]) 
-        else: 
-            s += str(x)
+        s += term_to_str(x)
         s += ', '
     s = s[:-2]
     s += ')'
@@ -239,11 +234,7 @@ def term_to_str(term):
         if len(term[1]) == 0:
             return term[0]
         else:
-            s = term[0] + '('
-            for t in term[1]:
-                s += term_to_str(t) + ', '
-            s = s[:-2] + ')'
-            return s
+            return term[0] + args_to_str(term[1])
 
 
 
