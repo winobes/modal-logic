@@ -169,21 +169,6 @@ def subst_to_str(subst):
 # Substitution
 #
 
-# Helper function for safe(): replace every occurrence of the variable v with
-# w.
-def safe_replace(f, v, w):
-    if pred(f):
-        return (f[0], [replace_terms(t, v, w) if t != v else w for t in f[1]])
-    if f[0] == 'not':
-        return ('not', safe_replace(f[1], v, w))
-    if f[0] == 'and' or f[0] == 'or':
-        return (f[0], [safe_replace(g, v, w) for g in f[1]])
-    if f[0] == 'arrow':
-        return ('arrow', safe_replace(f[1], v, w), safe_replace(f[2], v, w))
-    if f[0] == 'all' or f[0] == 'exists':
-        return f
-    raise ValueError('unknown operator: %s' % f[0])
-
 def replace_terms(t, v, w):
     if variable(t):
         if t == v:
