@@ -65,39 +65,6 @@ def args_to_str(a):
     s += ')'
     return s
 
-# Evaluate the formula f. The assignment is a dictionary from free variables to 
-# elements of the domain, and the interpretation is a dictionary from predicates
-# to a set of n-tuples of elements from the domain where n is the arity of the 
-# predicate.
-# TODO Test for predicate arity errors in assignment
-def evaluate(f, asgmnt, intprt, domain):
-    if pred(f):
-        return tuple([interpret_arg(arg, intprt, asgmnt) 
-                                        for arg in f[1]]) in intprt[f[0]]
-    if f[0] == 'not':
-        return not evaluate(f[1], asgmnt, intprt, domain)
-    if f[0] == 'and':
-        return all(evaluate(g, asgmnt, intprt, domain) for g in f[1])
-    if f[0] == 'or':
-        return any(evaluate(g, asgmnt, intprt, domain) for g in f[1])
-    if f[0] == 'arrow':
-        return not evaluate(f[1], asgmnt, intprt, domain) or evaluate(f[2], asgmnt, intprt, domain)
-    if f[0] == 'all' or f[0] == 'exists' :
-        return eval_bound(f, asgmnt, intprt, domain)
-    raise ValueError('unknown operator:', f[0])
-
-# Helper function for evaluate. 
-def eval_bound(f, asgmnt, intprt, domain):
-    from itertools import combinations_with_replacement
-    all_asgmnt = [{x:a for (x,a) in zip(f[1], combo)}
-        for combo in combinations_with_replacement(domain, len(f[1]))]
-    if f[0] == 'all':
-        return all(evaluate(f[2], dict(list(asgmnt.items()) + list(d.items())), intprt, domain) for d in all_asgmnt)
-        # d overwrites the assignment for bound variables 
-    if f[0] == 'exists':
-        return any(evaluate(f[2], dict(list(asgmnt.items()) + list(d.items())), intprt, domain) for d in all_asgmnt)
-    raise ValueError('unknown operator:', f[0])
-
 # Returns a dictionary from predicates to their arities
 def get_preds(f):
     preds = {} 
@@ -180,42 +147,6 @@ def get_functions(f):
         return funcs
     if f[0] == 'all' or f[0] == 'exists':
         return get_functions(f[2])
-
-# Checks the validity of f on k models of size n. Returns the first countermodel
-# found. If no countermodel of size n is found, returns None.
-def check_models(f, n, k):
-    from itertools import combinations, product 
-    from random import randint, sample
-    domain = {str(i) for i in range(n)}
-    preds = get_preds(f)
-    variables = get_variables(f)
-    funcs = get_functions(f)
-    combos = {p:{combo for combo in product(*[domain for i in range(preds[p])])} for p in preds}
-    combos.update({f:{combo for combo in product(*[domain for i in range(funcs[f])])} for f in funcs})
-    hash_list = []
-    checked = 0
-    while checked < k:
-        intprt = {p:frozenset(sample(combos[p], randint(0, len(combos[p])))) for p in preds}
-        intprt.update({f:{x:sample(domain, 1)[0] for x in combos[f]} for f in funcs})
-        model_hash = hash(frozenset({a:(intprt[a] if not a in funcs else hash(frozenset(intprt[a].items()))) for a in intprt.keys()}.items()))
-        if not model_hash in hash_list:
-            hash_list.append(model_hash)
-            checked += 1
-            asgmnt = {v:sample(domain, 1)[0] for v in variables}
-            if not evaluate(f, asgmnt, intprt, domain):
-                return (intprt, asgmnt)
-    return None
-        
-# Helper function for evaluate(): interpret the arguments of a predicate or
-# function symbol.
-def interpret_arg(f, asgmnt, intprt):
-    if variable(f):
-        return intprt[f] 
-    elif function(f):
-        return asgmnt[f[0]][tuple([interpret_arg(arg, asgmnt, intprt) 
-                        for arg in f[1]])]
-    else:
-        raise ValueError('expected variable or function')
 
 # Standardise variables; i.e. each variable is bound at most once. If
 # necessary, variables are renamed to an indexed x variable (e.g. "x0").
