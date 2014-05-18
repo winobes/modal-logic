@@ -2,7 +2,7 @@ import util
 
 
 #
-# Utilitiy functions for predicate logic
+# Utilitiy Functions
 #
 
 def pred(f):
@@ -63,67 +63,7 @@ def variables_in_term(term):
         for t in term[1]:
             var |= variables_in_term(t)
         return var
-
-# Returns a dictionary from predicates to their arities
-def get_preds(f):
-    preds = {} 
-    if pred(f):
-        if f[0] in preds: 
-            raise ValueError('Conflicting arities for predicate: %s' % f[0])
-        preds[f[0]] = len(f[1])
-    if f[0] == 'not':
-        preds.update(get_preds(f[1]))
-    if f[0] == 'and' or f[0] == 'or':
-        for g in f[1]: preds.update(get_preds(g))
-    if f[0] == 'arrow':
-        preds.update(get_preds(f[1]))
-        preds.update(get_preds(f[2]))
-    if f[0] == 'all' or f[0] == 'exists' :
-        preds.update(get_preds(f[2]))
-    return preds
-
-# Return a set of constants.
-def get_constants(f):
-    if pred(f):
-        consts = set()
-        for a in f[1]:
-            if constant(a):
-                consts.add(a)
-        return consts
-    if f[0] == 'not':
-        return get_constants(f[1])
-    if f[0] == 'and' or f[0] == 'or':
-        consts = set()
-        for g in f[1]:
-            consts |= (get_constants(g))
-        return consts
-    if f[0] == 'arrow':
-        return get_constants(f[1]) | (get_constants(f[2]))
-    if f[0] == 'all' or f[0] == 'exists':
-        return get_constants(f[2])
-
-# Return a set of variables.
-def get_variables(f):
-    if pred(f):
-        variables = set()
-        for a in f[1]:
-            if variable(a):
-                variables.add(a)
-            if function(a):
-                for b in a[1]:
-                    variables.add(b)
-        return variables
-    if f[0] == 'not':
-        return get_variables(f[1])
-    if f[0] == 'and' or f[0] == 'or':
-        variables = set()
-        for g in f[1]:
-            variables |= (get_variables(g))
-        return variables
-    if f[0] == 'arrow':
-        return get_variables(f[1]) | (get_variables(f[2]))
-    if f[0] == 'all' or f[0] == 'exists':
-        return get_variables(f[2])
+bles(f[2])
 
 # Return a dictionary from functions to their arities.
 def get_functions(f):
@@ -337,7 +277,6 @@ def unify_termlists(t1, t2):
             if newsubst == None:
                 return None
             subst = compose_subst(newsubst, subst)
-        print("SUTHESOUHS>>>>>>>>>>>", subst)
         return subst
 
 # Return a substitution that unifies two terms. Return None if no such
