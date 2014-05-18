@@ -64,28 +64,6 @@ def variables_in_term(term):
             var |= variables_in_term(t)
         return var
 
-# Return a dictionary from functions to their arities.
-def get_functions(f):
-    if pred(f):
-        funcs = {}
-        for a in f[1]:
-            if function(a):
-                funcs[a[0]] = len(a[1])
-        return funcs
-    if f[0] == 'not':
-        return get_functions(f[1])
-    if f[0] == 'and' or f[0] == 'or':
-        funcs = {}
-        for g in f[1]:
-            funcs.update(get_functions(g))
-        return funcs
-    if f[0] == 'arrow':
-        funcs = get_functions(f[1])
-        funcs.update(get_functions(f[2]))
-        return funcs
-    if f[0] == 'all' or f[0] == 'exists':
-        return get_functions(f[2])
-
 # Helper function for skolemize(): return a list of all function symbols used
 # in the formula f.
 def get_funcs(f):
@@ -103,10 +81,6 @@ def get_funcs(f):
     if f[0] == 'all' or f[0] == 'exists':
         return get_funcs(f[2])
     raise ValueError('unknown operator: %s' % f[0])
-
-# Helper function for get_funcs
-def get_fucs_in_term(t):
-    pass
 
 
 #
