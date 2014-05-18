@@ -148,39 +148,6 @@ def get_functions(f):
     if f[0] == 'all' or f[0] == 'exists':
         return get_functions(f[2])
 
-# Standardise variables; i.e. each variable is bound at most once. If
-# necessary, variables are renamed to an indexed x variable (e.g. "x0").
-def safe(f):
-    return safe_do(f, [])
-
-# Helper function for safe(). The boundvars argument is a list of variables
-# already bound.
-def safe_do(f, boundvars):
-    if pred(f):
-        return f
-    if f[0] == 'not':
-        return ('not', safe_do(f[1], boundvars))
-    if f[0] == 'and' or f[0] == 'or':
-        return (f[0], [safe_do(g, boundvars) for g in f[1]])
-    if f[0] == 'arrow':
-        return ('arrow', safe_do(f[1], boundvars), safe_do(f[2], boundvars))
-    if f[0] == 'all' or f[0] == 'exists':
-        g = safe_do(f[2], boundvars)
-        quantvars = set()
-        for v in f[1]:
-            if v in boundvars:
-                i = 0
-                while 'x' + str(i) in boundvars:
-                    i += 1
-                w = 'x' + str(i)
-                g = safe_replace(g, v, w)
-            else:
-                w = v
-            quantvars.add(w)
-            boundvars.append(w)
-        return (f[0], quantvars, g)
-    raise ValueError('unknown operator: %s' % f[0])
-
 # Helper function for safe(): replace every occurrence of the variable v with
 # w.
 def safe_replace(f, v, w):
@@ -205,40 +172,6 @@ def replace_terms(t, v, w):
     elif function(t):
         return (t[0], [replace_terms(s, v, w) for s in t[1]])
     raise ValueError('expected a term, but got', t)
-
-# Skolemize a formule; i.e. replace each existentially quantified variable with
-# a Skolem function.
-def skolemize(f):
-    return skolemize_do(safe(f), skolemize_get_funcs(f), [])
-
-# Helper function for skolemize().
-# - The funcs argument is a list of function symbols occurring in the formula.
-# - The univars argument is a list of universally quantified variables that
-#   need to be arguments for the Skolem function.
-def skolemize_do(f, funcs, univars):
-    if pred(f):
-        return f
-    if f[0] == 'not':
-        return ('not', skolemize_do(f[1], funcs, univars))
-    if f[0] == 'and' or f[0] == 'or':
-        return (f[0], [skolemize_do(g, funcs, univars) for g in f[1]])
-    if f[0] == 'arrow':
-        return ('arrow', skolemize_do(f[1], funcs, univars),
-            skolemize_do(f[2], funcs, univars))
-    if f[0] == 'all':
-        univars += list(f[1])
-        return (f[0], f[1], skolemize_do(f[2], funcs, univars))
-    if f[0] == 'exists':
-        g = f[2]
-        for v in f[1]:
-            i = 0
-            while 'f' + str(i) in funcs:
-                i += 1
-            func = 'f' + str(i)
-            g = skolemize_replace(g, v, (func, univars))
-            funcs.append(func)
-        return skolemize_do(g, funcs, univars)
-    raise ValueError('unknown operator: %s' % f[0])
 
 # Helper function for skolemize(): return a list of all function symbols used
 # in the formula f.
