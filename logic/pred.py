@@ -1,12 +1,12 @@
 import util
 
-
 #
 # Utilitiy Functions
 #
 
+# A predicate is a string starting with P,Q,R or S.
 def pred(f):
-    return f[0] in 'PQRS'
+    return f[0][0] in 'PQRS'
 
 # A constant is just a 0-ary function
 def constant(x):
@@ -14,7 +14,7 @@ def constant(x):
 
 # Variables always start a letter from the end of the alphabet.
 def variable(x):
-    return isinstance(x, str) and x[0] in 'xyz'
+    return isinstance(x, str) and x[0][0] in 'xyz'
 
 # Functions (and constants) always start with a letter from the 
 # beginning of the alphabet
@@ -95,8 +95,144 @@ def flatten(l):
     return [item for sublist in l for item in sublist]
 
 #
-# Printing
+# Parsing & Printing
 #
+
+def parse(s):
+    return rpn_to_fmls(parse_to_rpn(s), 1)[0]
+
+def rpn_to_fmls(rpn, n):
+
+    op = rpn.pop()
+
+    if op[0] in {'all', 'exist'}:
+        subs = rpn_to_fmls(rpn, 1)
+        return [(op[0], op[1], subs[0])]
+    elif pred(op):
+        if n == 1:
+            return [op]
+        else:
+            return [op] + rpn_to_fmls(rpn, n-1)
+    elif op in {'arrow'}:
+        subs = rpn_to_fmls(rpn, 2)
+        return [(op, subs[1], subs[0])]
+    elif op in {'and', 'or'}:
+        subs = rpn_to_fmls(rpn, 2)
+        return [(op, subs)]
+    elif op == 'not':
+        subs = rpn_to_fmls(rpn, 1)
+        return [(op, subs[0])]
+    else:
+        raise ValueError("unrecognized expression", op)
+
+# Convert a string to a formula
+def parse_to_rpn(s):
+
+    ops = {'->', '~', '&'}
+    quants = {'A', 'E'}
+    stack = []
+    output = []
+    name = ""
+    quant = False
+
+    while s:
+        c = s[0]
+        s = s[1:]
+
+        if not name:
+            if c == '(':
+                stack.append('(')
+            elif c == ')':
+                while True:
+                    pop = stack.pop()
+                    if pop == '(':
+                        break
+                    else:
+                        output.append(pop)
+            elif c in ops:
+                stack.append(op_to_name(c))
+            elif c in quants:
+                if quant:
+                    stack.append(name)
+                quant = True
+                name = c
+            else:
+                name += c
+        elif name:
+            if c ==  '(':
+                if quant:
+                    quant = False
+                    stack.append(parse_quant(name))
+                    stack.append('(')
+                    name = ""
+                else:
+                    out, s = parse_args(s)
+                    output.append((name, out))
+                    name = ""
+            else: 
+                name += c 
+                if name in ops:
+                    stack.append(op_to_name(name))
+                    name = ""
+
+    return output + stack
+
+def op_to_name(s):
+    d = {'A':  'all',
+         'E':  'exist',
+         '->': 'arrow',
+         '&':  'and',
+         '|':  'or',
+         '~':  'not'
+         }
+    if not s in d:
+        raise ValueError('unknown operator ', s)
+    else:
+        return d[s]
+
+def parse_quant(s):
+    return (op_to_name(s[0]), parse_quant_vars(s[1:]))
+
+def parse_quant_vars(s):
+
+    vs = set() 
+    v = ''
+
+    for c in s: 
+        if c in {'x', 'y', 'z'}: 
+            if v:
+                vs.add(v)
+            v = c
+        else:
+            v += c
+    vs.add(v)
+
+    return vs
+
+def parse_args(s):
+    stack = []
+    term = None #string if varriable, tuple if function or constant
+    output = []
+    while s:
+        c = s[0]
+        s = s[1:]
+        if c == ',' or c == ')' and not stack:
+            if type(term) == str and not term[0] in {'x','y','z'}:
+                term = (term, [])
+            output.append(term)
+            term = ""
+            if c == ')':
+                return (output, s)
+        elif not term:
+            term = c
+        elif term:
+            if c == '(':
+                out, s = parse_args(s)
+                term = (term, out)
+            else:
+                term += c
+    return output
+        
 
 # Convert a formula to a string.
 def fml_to_str(f):
@@ -200,17 +336,10 @@ def subst_termlist(subst, termlist):
 # Apply a substitution to a term.
 def subst_term(subst, term):
     if variable(term):
-        return subst_var(subst, term)
+        return subst[term] if term in subst else term
     else:
         return (term[0], subst_termlist(subst, term[1]))
 
-# Apply a substitution to a variable.
-def subst_var(subst, var):
-    if var in subst:
-        return subst[var]
-    else:
-        return var
-     
 
 #
 # Unification
