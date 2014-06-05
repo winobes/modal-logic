@@ -457,8 +457,9 @@ def tableau_expand_do(branches, gdepth, gcounter, skolem_func_counter, uni_var_c
                 util.dprint('gamma rule on', fml_to_str(f))
                 branches.remove(branch)
                 gcounter.append(f)
-                if gcounter.count(f) >= gdepth:
-                    branch.remove(f)
+                branch.remove(f)
+                if gcounter.count(f) < gdepth:
+                    branch.append(f)
                 new_f = subs[1]
                 for var in subs[0]:
                     parameter =  'x' + str(uni_var_counter)
@@ -485,7 +486,7 @@ def tableau_fml_type(f):
         return ('alpha', [('not', g) for g in f[1][1]])
     if f[0] == 'not' and f[1][0] == 'arrow':
         return ('alpha', [f[1][1], ('not', f[1][2])])
-    
+
     if f[0] == 'or':
         return ('beta', f[1])
     if f[0] == 'not' and f[1][0] == 'and':

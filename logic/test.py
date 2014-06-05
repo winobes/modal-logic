@@ -45,10 +45,10 @@ def compare_provers(provers, fml_to_str, fmls):
 
 # takes a container of forumlas sigma and a formula phi and checks if
 # phi is entailed by sigma using the desired proof method 
-def check_entailment(sigma, phi, proof_method):
+def check_entailment(sigma, phi, proof_method, gdepth):
     f = ('arrow', ('and', list(sigma)), phi)
     # The tableaux proof method needs an additional argument.
-    return proof_method(f, 0)
+    return proof_method(f, gdepth)
 
 
 def model_checking():
@@ -439,7 +439,7 @@ def print_theories():
 def test8():
     phi = ('all', {'x', 'y', 'z'}, ('arrow', ('and', [('R', ['x','y']), ('R', ['y', 'z'])]),
                                         ('not', ('R', ['z', 'x']))))
-    print(check_entailment(theories()['Strict Partial Order'], phi, pred.tableau))
+    print(check_entailment(theories()['Strict Partial Order'], phi, pred.tableau, 1))
 
 def totp_exercises():
     a = axioms()
@@ -448,21 +448,21 @@ def totp_exercises():
     print_theories()
 
     print('transitive, symmetric, serial |- reflexive')
-    print(check_entailment([a['transitive'], a['symmetric'], a['serial']], a['reflexive'], pred.tableau))
+    print(check_entailment([a['transitive'], a['symmetric'], a['serial']], a['reflexive'], pred.tableau, 2))
     print()
-    exit()
+
     print('Strict Partial Order |- asymmetric')
-    print(check_entailment(t['Strict Partial Order'], a['asymmetric'], pred.tableau))
+    print(check_entailment(t['Strict Partial Order'], a['asymmetric'], pred.tableau, 1))
     print()
 
     print('asymmetric |- irreflexive')
-    print(check_entailment([a['asymmetric']], a['irreflexive'], pred.tableau))
+    print(check_entailment([a['asymmetric']], a['irreflexive'], pred.tableau, 1))
     print()
 
     print('Semi-order 1 |- Semi-order 2')
-    print(check_entailment(t['Semi-order1'], ('and', t['Semi-order2']), pred.tableau))
+    print(check_entailment(t['Semi-order1'], ('and', t['Semi-order2']), pred.tableau, 2))
     print('Semi-order 2 |- Semi-order 1')
-    print(check_entailment(t['Semi-order2'], ('and', t['Semi-order1']), pred.tableau))
+    print(check_entailment(t['Semi-order2'], ('and', t['Semi-order1']), pred.tableau, 2))
     print()
 
 def test_pred_tableaux_2():
@@ -680,6 +680,6 @@ def schubert_steamroller():
     print()
     print(pred.tableau(fml, 0))
 
-util.debug = 1
+util.debug = 0
 
-totp_exercises()
+schubert_steamroller()
