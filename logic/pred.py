@@ -14,7 +14,7 @@ def constant(x):
 
 # Variables always start a letter from the end of the alphabet.
 def variable(x):
-    return isinstance(x, str) and x[0][0] in 'xyz'
+    return isinstance(x, str) and x[0][0] in 'wxyz'
 
 # Functions (and constants) always start with a letter from the 
 # beginning of the alphabet
