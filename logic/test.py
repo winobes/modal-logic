@@ -467,7 +467,11 @@ def totp_exercises():
 
 def test_pred_tableaux_2():
     fmls = [
-        # Fitting p. 138 (fig. 6.1)
+        #
+        # From the Fitting book
+        #
+
+        # Figure 6.1 (p. 138)
         ('arrow',
             ('all', {'x'},
                 ('or', [
@@ -477,7 +481,7 @@ def test_pred_tableaux_2():
                 ('exists', {'x'}, ('P', ['x'])),
                 ('all', {'x'}, ('Q', ['x']))])),
 
-        # Fitting p. 139 (exc. 6.1.1)
+        # Exercise 6.1.1 (pp. 139-140) (not all are theorems)
         ('arrow',
             ('exists', {'x'},
                 ('all', {'y'},
@@ -512,6 +516,142 @@ def test_pred_tableaux_2():
             ('and', [
                 ('exists', {'x'}, ('P', ['x'])),
                 ('exists', {'x'}, ('Q', ['x']))])),
+        ('arrow',
+            ('and', [
+                ('exists', {'x'}, ('P', ['x'])),
+                ('all', {'x'}, ('Q', ['x']))]),
+            ('exists', {'x'}, ('and', [('P', ['x']), ('Q', ['x'])]))),
+        ('all', {'x'},
+            ('exists', {'y'},
+                ('all', {'z'},
+                    ('exists', {'w'},
+                        ('or', [
+                            ('R', ['x', 'y']),
+                            ('not', ('R', ['w', 'z']))]))))),
+        ('arrow',
+            ('all', {'x'}, ('Q', ['x'])),
+            ('exists', {'x'},
+                ('all', {'y'},
+                    ('or', [
+                        ('not', ('P', ['y'])),
+                        ('and', [
+                            ('P', ['x']),
+                            ('Q', ['x'])
+                        ])])))),
+
+        # Exercise 6.1.2 (p. 140)
+        ('arrow',
+            ('and', [
+                ('all', {'x', 'y', 'z'},
+                    ('arrow',
+                        ('and', [
+                            ('R', ['x', 'y']),
+                            ('R', ['y', 'z'])]),
+                        ('R', ['x', 'z']))),
+                ('all', {'x', 'y'},
+                    ('arrow',
+                        ('R', ['x', 'y']),
+                        ('R', ['y', 'x']))),
+                ('all', {'x'}, ('exists', {'y'}, ('R', ['x', 'y'])))
+            ]),
+            ('all', {'x'}, ('R', ['x', 'y']))),
+
+        # Exercise 6.1.3 (p. 140)
+        ('exists', {'x'},
+            ('all', {'y'},
+                ('all', {'z'},
+                    ('arrow',
+                        ('arrow',
+                            ('P', ['y']),
+                            ('Q', ['z'])),
+                        ('arrow',
+                            ('P', ['x']),
+                            ('Q', ['x'])))))),
+        ('exists', {'x'},
+            ('all', {'y'},
+                ('all', {'z'},
+                    ('arrow',
+                        ('or', [
+                            ('P', ['y']),
+                            ('Q', ['z'])]),
+                        ('or', [
+                            ('P', ['x']),
+                            ('Q', ['x'])]))))),
+        ('exists', {'x'},
+            ('all', {'y'},
+                ('all', {'z'},
+                    ('all', {'w'},
+                        ('arrow',
+                            ('or', [
+                                ('P', ['y']),
+                                ('Q', ['z']),
+                                ('R', ['w'])]),
+                            ('or', [
+                                ('P', ['x']),
+                                ('Q', ['x']),
+                                ('R', ['x'])])))))),
+
+        # Example (p. 141)
+        ('arrow',
+            ('all', {'x'},
+                ('or', [
+                    ('P', ['x']),
+                    ('Q', ['x'])])),
+            ('or', [
+                ('exists', {'x'}, ('P', ['x'])),
+                ('all',    {'x'}, ('Q', ['x']))])),
+
+        # Exercise 7.4.1 (p. 169)
+        ('arrow',
+            ('exists', {'x'}, ('all',    {'y'}, ('R', ['x', 'y']))),
+            ('all',    {'y'}, ('exists', {'x'}, ('R', ['x', 'y'])))),
+        ('exists', {'x'},
+            ('arrow',
+                ('P', ['x']),
+                ('all', {'x'}, ('P', ['x'])))),
+        ('arrow',
+            ('all', {'x'},
+                ('all', {'y'},
+                    ('and', [
+                        ('P', ['x']),
+                        ('P', ['y'])]))),
+            ('exists', {'x'},
+                ('exists', {'y'},
+                    ('or', [
+                        ('P', ['x']),
+                        ('P', ['y'])])))),
+        ('arrow',
+            ('all', {'x'},
+                ('all', {'y'},
+                    ('and', [
+                        ('P', ['x']),
+                        ('P', ['y'])]))),
+            ('all', {'x'},
+                ('all', {'y'},
+                    ('or', [
+                        ('P', ['x']),
+                        ('P', ['y'])])))),
+        ('all', {'x'},
+            ('exists', {'y'},
+                ('all', {'z'},
+                    ('exists', {'w'},
+                        ('or', [
+                            ('R', ['x', 'y']),
+                            ('not', ('R', ['w', 'z']))]))))),
+
+        # Example (p. 184)
+        ('arrow',
+            ('exists', {'w'},
+                ('all', {'x'},
+                    ('R', ['x', 'w', ('f', ['x', 'w'])]))),
+            ('exists', {'w'},
+                ('all', {'x'},
+                    ('exists', {'y'},
+                        ('R', ['x', 'w', 'y']))))),
+
+        #
+        # Other tests
+        #
 
         # Reflexitivity, symmetry, transitivitiy.
         ('all', {'x'}, ('R', ['x', 'x'])),
@@ -520,9 +660,9 @@ def test_pred_tableaux_2():
             ('arrow',
                 ('and', [('R', ['x', 'y']), ('R', ['y', 'z'])]),
                 ('R', ['x', 'z']))),
-            
-        ('arrow', 
-            ('all', {'x'}, ('or', [('P', ['x']), ('Q', ['x'])])), 
+
+        ('arrow',
+            ('all', {'x'}, ('or', [('P', ['x']), ('Q', ['x'])])),
             ('or', [('all', {'x'}, ('P', ['x'])), ('all', {'x'}, ('Q', ['x']))])
         )
     ]
@@ -682,4 +822,4 @@ def schubert_steamroller():
 
 util.debug = 0
 
-schubert_steamroller()
+test_pred_tableaux_2()
