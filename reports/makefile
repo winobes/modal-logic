@@ -1,6 +1,6 @@
 TEX= latex -shell-escape
 
-NAME=cnf
+NAME=report
 SRC= $(NAME).tex
 PDF= $(NAME).pdf
 
