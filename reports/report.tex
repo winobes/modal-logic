@@ -8,6 +8,8 @@
 \usepackage[margin=2cm]{geometry}
 \usepackage[final]{pdfpages}
 
+\newminted[code]{python}{frame=single}
+
 % Use the nicer phi
 \let\phi\varphi
 
@@ -116,7 +118,7 @@ $\mathrm{impl\_to\_disj}(\phi) = \mathrm{impl\_to\_disj}(\psi_1) \lor \ldots
 \noindent
 The Python implementation is as follows.
 
-\begin{minted}[frame=single]{python}
+\begin{code}
 def impl_to_disj(f):
     if atom(f):
         return f
@@ -128,16 +130,16 @@ def impl_to_disj(f):
         return ('or', [('not', impl_to_disj(f[1])), impl_to_disj(f[2])])
     else:
         raise ValueError('unknown operator:', f[0])
-\end{minted}
+\end{code}
 
 \noindent
 The atom() function returns true if its tuple argument contains exactly 1
 argument and false otherwise:
 
-\begin{minted}[frame=single]{python}
+\begin{code}
 def atom(f):
     return len(f) == 1
-\end{minted}
+\end{code}
 
 The nnf() function may be defined as follows.
 
@@ -180,7 +182,7 @@ If $\phi = \psi_1 \lor \ldots \lor \psi_n$, then $\mathrm{nnf}(\phi) =
 \noindent
 The Python implementation is as follows.
 
-\begin{minted}[frame=single]{python}
+\begin{code}
 def nnf(f):
     return nnf_do(impl_to_disj(f))
 
@@ -202,7 +204,7 @@ def nnf_do(f):
         return (f[0], [nnf_do(g) for g in f[1]])
     else:
         raise ValueError('unexpected operator:', f[0])
-\end{minted}
+\end{code}
 
 The $\mathrm{cnf}()$ function is defined as follows.
 
@@ -253,7 +255,7 @@ disjunction.
 The Python implementation of $\mathrm{cnf}()$ and $\mathrm{dist}()$ is as
 follows.
 
-\begin{minted}[frame=single]{python}
+\begin{code}
 def cnf(f):
     if atom(f) or f[0] == 'not':
         return f
@@ -282,7 +284,7 @@ def dist(f, g):
             return ('and', [dist(f, h) for h in g[1]])
     else:
         return ('or', [f, g])
-\end{minted}
+\end{code}
 
 After a formula has been transformed into CNF, it may contain nested lists of
 conjunctions and disjunctions.
@@ -292,7 +294,7 @@ list duplicate disjuncts and likewise for the conjunction list.
 
 The Python implementation for these functions is as follows.
 
-\begin{minted}[frame=single]{python}
+\begin{code}
 def flatten(f):
     if f[0] == 'and':
         return ('and', flatten_conj(f[1]))
@@ -329,16 +331,16 @@ def remove_dups(f):
         return ('or', list(set(f[1])))
     else:
         return f
-\end{minted}
+\end{code}
 
 \noindent
 To incorporate these functions into the function chain, the original cnf()
 function is renamed to cnf\_do() and the new cnf() function is as follows.
 
-\begin{minted}[frame=single]{python}
+\begin{code}
 def cnf(f):
     return remove_dups(flatten(cnf_do(nnf(f))))
-\end{minted}
+\end{code}
 
 \section{The Semantic Algorithm}
 
@@ -396,7 +398,7 @@ Thus we have:
 
 The Python implementation is as follows.
 
-\begin{minted}[frame=single]{python}
+\begin{code}
 # Uses the truth table method to compute disjunctive normal form
 def dnf_tt(f):
     # filter the truth table to only rows where f is True
@@ -408,7 +410,7 @@ def dnf_tt(f):
     return tuple(['or', [tuple(['and', 
         [p if row[p] else tuple(['not', p]) for p in row.keys() ]]) 
         for row in f_true_tt] ])
-\end{minted}
+\end{code}
 
 To construct a CNF formula from the truth table, we take the opposite (but
 	obviously
@@ -429,7 +431,7 @@ Thus we have:
      ]
 \]
 
-\begin{minted}[frame=single]{python}
+\begin{code}
 # Uses the truth table method to compute conjunctive normal form
 def cnf_tt(f):
     # filter the truth table to only rows where f is False 
@@ -441,7 +443,7 @@ def cnf_tt(f):
     return tuple(['and', [tuple(['or', 
         [p if not row[p] else tuple(['not', p]) for p in row.keys()] ]) 
         for row in f_false_tt]])
-\end{minted}
+\end{code}
 
 \section{Analysis}
 
@@ -449,13 +451,13 @@ The semantic algorithm has a higher up-front cost than the syntactic one.
 The cost of generating the empty truth table is relatively small:
 it is a list of the $2^n$ possible valuations (where $n$ is the
         number of atomic propositions):
-\begin{minted}[frame=single]{python}
+\begin{code}
 # Generates all possible valuations for a given set of atoms.     
 def gen_tt(atoms):
     from itertools import product
     return [{p:val for (p, val) in zip(atoms, vals)} for vals in 
          product([False, True], repeat=len(atoms))]
-\end{minted}
+\end{code}
 Filtering the truth table to only the rows where $f$ is $False$ is rather
         intensive since the formula must be evaluated at each of the
         $2^n$ rows and the evaluation function may be called up to once
