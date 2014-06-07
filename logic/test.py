@@ -22,7 +22,7 @@ def test_prover(prover, fml_to_str, tests):
 
 def test_provers(provers, fml_to_str, tests):
     for p in provers:
-        print('%s:', p.__name__)
+        print('%s:' % p.__name__)
         test_prover(p, fml_to_str, tests)
         print()
 
