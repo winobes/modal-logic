@@ -558,7 +558,7 @@ def tableau_do(branch):
     if tableau_closed(branch):
         return True
 
-    # Handle alpha formulas.
+    # Handle double negations and alpha formulas.
     for f in branch:
         if f[0] == 'not' and f[1][0] == 'not':
             return tableau_do([g for g in branch if g != f] + [f[1][1]])
