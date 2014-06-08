@@ -520,10 +520,7 @@ def resolve2_do(clauses):
     res = resolve2_resolvable(clauses)
     if not res:
         return False
-
-    lit = res[0]
-    c1 = res[1]
-    c2 = res[2]
+    lit, c1, c2 = res
 
     clauses.remove(c1)
     c1.remove(lit)

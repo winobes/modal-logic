@@ -454,7 +454,8 @@ def cnf_tt(f):
 \subsubsection{Comparison}
 
 The semantic algorithm has a higher up-front cost than the syntactic one.
-The cost of generating the empty truth table is relatively small:
+The cost of generating the empty truth table is depends on the number of
+   atomic propositions since 
 it is a list of the $2^n$ possible valuations (where $n$ is the
         number of atomic propositions):
 \begin{code}
@@ -479,17 +480,11 @@ formulas to CNF.
 The columns represent the number of unique atoms in a formula while the rows
 represent the total number of atoms occurring in that formula.
 
-\begin{figure}
+\begin{figure}[!ht]
 \caption{Semantic vs. Syntatic CNF time differential}
-\noindent
 \includegraphics[
-    page=1,
     width=\textwidth,
-    height=\textheight,
-    keepaspectratio
 ]{report_colors_cropped.pdf}
-\vfill
-\newpage
 \end{figure}
 
 For formulas given in DNF, the semantic algorithm is faster for formulas of any
@@ -509,7 +504,126 @@ The relative strengths of the two algorithms highlights two distinct ways that
         a propositional formula can be complex.
 
 \subsection{Resolution}
-% TODO Bill
+Resolution is a proof method commonly used in automated theorem provers.
+
+\subsubsection{Clausal Form}
+Before implementing resolution, it is useful to have another way to
+   represent propositional formulas.
+We shall refer to a list of literals as a \emph{clause}.
+A clause is satisifed if any of its literals are satisfied.
+Thus a non-empty clause is equivalent to a disjunction of its members.
+Note that an empty clause is unsatisfiable.
+We shall say that a list of clauses is satisfied if all of clauses in the 
+   list are satisfied.
+Clearly a list of clauses containing an empty clause is unsatisfiable.
+A list of non-empty clauses is equivalent to a fromula in CNF.
+
+We define the following utility function for converting a formula in CNF to
+   a list of clauses (i.e., a list of lists of literals).
+\begin{code}
+def fml_to_clauses(f):
+    if atom(f) or f[0] == 'not':
+        return [[f]]
+    if f[0] == 'or': 
+        return [f[1]]
+    if f[0] == 'and':
+        return [fml_to_clauses(x)[0] for x in f[1]]
+\end{code}
+
+
+\subsubsection{The Resolution Rule}
+The rule at the core of resolution is as follows:
+Given two clauses:
+\begin{align*}
+A &= [a_1,...,a_{i-1}, p, a_{i},...,a_n]\text{ and }\\
+B &= [b_1,...,b_{j-1},\lnot p, b_{j}, ..., b_m]
+\end{align*}
+such that each $a_i$ and $b_i$ are literals and $p$ is an atomic formula,
+if $A$ and $B$ are both satisfied, then so 
+   is $C = [a_1,..., a_n, b_1..., b_m]$.
+Two clauses of the form $A$ and $B$ are call \emph{resolvable}.
+We apply the resolution rule to a list of clauses by removing two resolvable
+   clauses and replacing them with the result of resolving them.
+Repeated application of the resolution rule will result in a list of clauses
+   that are pairwise unresolvable.
+If $[A_1,...,A_n]$ is a non-empty list of unresolvable clauses, it is easy 
+   to see that it is satisfiable, since we may simply choose one literal 
+   from each clause to make true, and doing so won't preclude the 
+   satisfiability of any of the other clauses.
+If any of the clauses is empty then the list is contradictory.
+This is natural since the resolution rule can only give an
+   empty clause is by resolving two contradictory singleton clauses:
+\[
+\big[A_1,..., A_{i-1}, [p], [\lnot p], A_i,..., A_n\big] \overset{resolve}\implies
+\big[A_1,..., A_{i-1}, [\ ], A_i,..., A_n\big]
+\]
+Clearly once an empty clause produced, there is no need to resolve further;
+   the list is unsatisfiable.
+
+\subsubsection{Implementation}
+
+The deduction theorem for propositional logic says that a sentence $\psi$
+   follows from a finite list of sentences $\phi_1,...,\phi_n$ if and only
+   if the implication formed by the conjnuction of the $\phi_i$'s and $\psi$
+   is a tautology:
+\[
+\phi_1,...,\phi_n\models\psi \iff \models\phi_1\land,...,\land\phi_n
+   \rightarrow\psi
+\]
+
+A sentence is a tautology if and only if its negation is a contradiction.
+The resolution rule can tell us whether a list of clauses is a contradiction.
+Thus the problem of checking if $\phi_1,...,\phi_n\models\psi$ is reduced
+   to checking whether or not a single sentence is contradictory.
+
+\begin{code}
+def resolve(f):
+    return resolve_do(fml_to_clauses(cnf(('not', f))))
+\end{code}
+
+First we define a function that, given a list of clauses, searches for two
+   that are resolvable and returns a tripple contaning the two clauses
+   and the literal that makes them resolvable.
+
+\begin{code}
+def resolve_resolvable(clauses):
+    for c1 in clauses:
+        for lit in c1:
+            if atom(lit):
+                for c2 in clauses:
+                    if c2 is c1:
+                        continue
+                    if ('not', lit) in c2:
+                        return (lit, c1, c2)
+\end{code}
+If no resolvable clauses are found, the function will return \texttt{None}
+   (Python's default return value).
+
+Now we are ready to define the resolution algorithm:
+
+\begin{code}
+def resolve_do(clauses):
+
+    res = resolve_resolvable(clauses)
+    if not res:
+        # No resolvable clauses were found.
+        return False
+    lit, c1, c2 = res
+
+    # Apply the resolution rule.
+    clauses.remove(c1)
+    c1.remove(lit)
+    clauses.remove(c2)
+    c2.remove(('not',lit))
+    clauses.append(c1 + c2)
+
+    if [] in clauses:
+        # The list of clauses is unsatisfiable.
+        return True
+
+    return resolve_do(clauses)
+\end{code}
+
 
 \subsection{Disjunctive Normal Form}
 % TODO Tim
