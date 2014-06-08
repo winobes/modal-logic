@@ -636,7 +636,84 @@ def resolve_do(clauses):
 \section{Predicate Methods}
 
 \subsection{Formula Representation}
-% TODO Bill
+In propositional logic, atomic forumlas are structureless; only their
+   names matter.
+Thus we were free to represent propositions simply as strings of characters.
+
+In predicate logic, we also want to talk about relations between and functions
+   on individuals. 
+A \emph{term} refers (rigidly or as a variable) to a single individual.
+
+Formally, terms are defined inductively:
+\begin{enumerate}
+\item If \texttt{s} is a string beginning with \texttt{'w','x','y'} or 
+   \texttt{'z'}, then \texttt{s} is a variable.
+A variable is a term.
+\item If \texttt{s} is a string beginning with \texttt{'a','b','c','d','e','f'} 
+   or \texttt{'g'}, then \texttt{s} is a function symbol.
+\item If \texttt{s} is a function symbol then \texttt{(s, [])} is a constant.
+A constant is a term.
+\item  
+If \texttt{s} is a $n$-ary function symbol, and \texttt{[t$_1,\ldots,$t$_n$]} 
+   is a list of terms, then \texttt{(s,[t$_1,\ldots,$t$_n$])} is a term.
+\end{enumerate}
+
+The functions for determining if a term is a variable, a contstant, or a
+   function are defined as follows:
+\begin{code}
+def variable(x):
+    return isinstance(x, str) and x[0][0] in 'wxyz'
+
+def function(x):
+    return isinstance(x, tuple) and x[0][0] in 'abcdfghj'
+
+def constant(x):
+    return function(x) and len(x[1]) == 0 
+\end{code}
+
+Predictae logic formulas are defined inductively as follows:
+\begin{enumerate}
+\item If \texttt{s} is a string beginning with \texttt{'P','Q','R'} or \texttt{'S'}, and 
+   \texttt{[t$_1,\ldots,$t$_n$]} is a list of terms, then \texttt{(s, [t$_1,
+      \ldots, $t$_n$])} is an atomic formula.
+\item If \texttt{f} is a formula and \texttt{\{x$_1,\ldots,$x$_n$\}} is a set of
+   variables then:
+   \begin{enumerate}
+      \item \texttt{(forall, \{x$_1,\ldots,$x$_n$\}, f)} is a formula, and
+      \item \texttt{(exists, \{x$_1,\ldots,$x$_n$\}, f)} is a formula.
+   \end{enumerate}
+
+\item
+If \texttt{f} is a formula, then \texttt{('not', f)} is a formula.
+
+\item
+If \texttt{f} and \texttt{g} are formulas, then \texttt{('arrow', f, g)} is a
+formula.
+
+\item
+If \texttt{f}$_1$, $\ldots$, \texttt{f}$_n$ are formulas, then \texttt{('and',
+[f$_1$, $\ldots$, f$_n$])} is a formula.
+
+\item
+If \texttt{f}$_1$, $\ldots$, \texttt{f}$_n$ are formulas, then \texttt{('or',
+[f$_1$, $\ldots$, f$_n$])} is a formula.
+\end{enumerate}
+
+A variable is \emph{free} in a formula if it appears outside the scope
+   of a quantifier.
+We call a formula with no free variables a \emph{sentence}.
+
+Two useful functions (with straightforward inductive implementations) are
+\begin{code}
+def get_free_vars(f, bound_vars):
+\end{code}
+returning a set containing of all the free variabes in \texttt{f} (excluding those
+   found in the \texttt{bound\_vars} paramater) and
+\begin{code}
+def get_funcs(f):
+\end{code}
+which returns a list of all function symbols (including constants) appearing
+   in \texttt{f}.
 
 \subsection{Unification}
 % TODO Tim
