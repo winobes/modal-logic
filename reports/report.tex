@@ -13,7 +13,7 @@
 % Use the nicer phi
 \let\phi\varphi
 
-\title{Conjunctive Normal Form}
+\title{Automated Theorem Proving in Python}
 \author{Bill Noble\\ Tim van der Molen}
 \date{January 2014}
 
@@ -21,21 +21,11 @@
 \maketitle
 
 \section{Introduction}
+% TODO
 
-A formula is in conjunctive normal form (CNF) if it is a conjunction of
-subformulas, each of which either is a literal (i.e. an atom or the negation of
-an atom) or a disjunction of literals.
-As a special case, a CNF formula may consist of only one conjunct, in which
-case it simply is either a literal or a disjunction of literals. 
-CNF is very useful in automatic theorem proving, because its structure allows
-for efficient formula evaluation.
-In this report we discuss and compare two algorithms to transform arbitrary
-propositional formulas into CNF.
-The first algorithm employs syntactical manipulation while the second has a
-semantical approach relying on truth tables.
-The two algorithms have been implemented in the Python programming language.
+\section{Propositional Methods}
 
-\section{Formula Representation}
+\subsection{Formula Representation}
 
 We use tuples and lists to represent formulas in Python.
 As may be expected, tuples in Python are enclosed in round brackets while lists
@@ -69,7 +59,23 @@ If \texttt{f}$_1$, $\ldots$, \texttt{f}$_n$ are formulas, then \texttt{('or',
 For example, the formula $p \land \lnot q \land (r \to s)$ is represented as
 \texttt{('and', [('p',), ('not', ('q',)), ('arrow', ('r',), ('s',))])}.
 
-\section{The Syntactic Algorithm}
+
+\subsection{Conjunctive Normal Form}
+
+A formula is in conjunctive normal form (CNF) if it is a conjunction of
+subformulas, each of which either is a literal (i.e. an atom or the negation of
+an atom) or a disjunction of literals.
+As a special case, a CNF formula may consist of only one conjunct, in which
+case it simply is either a literal or a disjunction of literals. 
+CNF is very useful in automatic theorem proving, because its structure allows
+for efficient formula evaluation.
+In this report we discuss and compare two algorithms to transform arbitrary
+propositional formulas into CNF.
+The first algorithm employs syntactical manipulation while the second has a
+semantical approach relying on truth tables.
+The two algorithms have been implemented in the Python programming language.
+
+\subsubsection{The Syntactic Algorithm}
 
 The syntactic CNF algorithm exploits the distributivity of disjunction over
 conjunction to transform formulas into CNF.
@@ -342,7 +348,7 @@ def cnf(f):
     return remove_dups(flatten(cnf_do(nnf(f))))
 \end{code}
 
-\section{The Semantic Algorithm}
+\subsubsection{The Semantic Algorithm}
 
 Rather than converting $f$ to CNF directly, the semantic algorithm
         constructs a truth table and uses it to produce a formula in CNF
@@ -445,7 +451,7 @@ def cnf_tt(f):
         for row in f_false_tt]])
 \end{code}
 
-\section{Analysis}
+\subsubsection{Comparison}
 
 The semantic algorithm has a higher up-front cost than the syntactic one.
 The cost of generating the empty truth table is relatively small:
@@ -467,12 +473,14 @@ Nevertheless, the semantic algorithm performs better on longer random formulas,
         where total number of propositions greatly exceeds the total number of
         unique propositions. 
 
-The following table lists the time differences (the execution time of the
+Figrue 1 gives the time differences (the execution time of the
 syntactic algorithm minus that of the semantic one) when converting 5000 random
 formulas to CNF.
 The columns represent the number of unique atoms in a formula while the rows
 represent the total number of atoms occurring in that formula.
 
+\begin{figure}
+\caption{Semantic vs. Syntatic CNF time differential}
 \noindent
 \includegraphics[
     page=1,
@@ -482,6 +490,7 @@ represent the total number of atoms occurring in that formula.
 ]{report_colors_cropped.pdf}
 \vfill
 \newpage
+\end{figure}
 
 For formulas given in DNF, the semantic algorithm is faster for formulas of any
 	length,
@@ -498,4 +507,31 @@ The semantic algorithm is less concerned with the syntactic
         construction of a truth table.
 The relative strengths of the two algorithms highlights two distinct ways that
         a propositional formula can be complex.
+
+\subsection{Resolution}
+% TODO Bill
+
+\subsection{Disjunctive Normal Form}
+% TODO Tim
+
+\subsection{Tableaux}
+% TODO Tim
+\subsubsection{Implementation 1} 
+\subsubsection{Implementation 2 (using DNF)}
+
+\section{Predicate Methods}
+
+\subsection{Formula Representation}
+% TODO Bill
+
+\subsection{Unification}
+% TODO Tim
+
+\subsection{Skolemization}
+% TODO Bill
+
+\subsection{Tableaux}
+% TODO Later
+
+
 \end{document}
