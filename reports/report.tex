@@ -72,7 +72,7 @@ for efficient formula evaluation.
 In this report we discuss and compare two algorithms to transform arbitrary
 propositional formulas into CNF.
 The first algorithm employs syntactical manipulation while the second has a
-semantical approach relying on truth tables.
+semantic approach relying on truth tables.
 The two algorithms have been implemented in the Python programming language.
 
 \subsubsection{The Syntactic Algorithm}
@@ -474,14 +474,14 @@ Nevertheless, the semantic algorithm performs better on longer random formulas,
         where total number of propositions greatly exceeds the total number of
         unique propositions. 
 
-Figrue 1 gives the time differences (the execution time of the
+Figure 1 gives the time differences (the execution time of the
 syntactic algorithm minus that of the semantic one) when converting 5000 random
 formulas to CNF.
 The columns represent the number of unique atoms in a formula while the rows
 represent the total number of atoms occurring in that formula.
 
 \begin{figure}[!ht]
-\caption{Semantic vs. Syntatic CNF time differential}
+\caption{Semantic vs. Syntactic CNF time differential}
 \includegraphics[
     width=\textwidth,
 ]{report_colors_cropped.pdf}
@@ -504,19 +504,19 @@ The relative strengths of the two algorithms highlights two distinct ways that
         a propositional formula can be complex.
 
 \subsection{Resolution}
-Resolution is a proof method commonly used in automated theorem provers.
+Resolution is a proof method commonly used in automated theorem pr overs.
 
 \subsubsection{Clausal Form}
 Before implementing resolution, it is useful to have another way to
    represent propositional formulas.
 We shall refer to a list of literals as a \emph{clause}.
-A clause is satisifed if any of its literals are satisfied.
+A clause is satisfied if any of its literals are satisfied.
 Thus a non-empty clause is equivalent to a disjunction of its members.
 Note that an empty clause is unsatisfiable.
 We shall say that a list of clauses is satisfied if all of clauses in the 
    list are satisfied.
 Clearly a list of clauses containing an empty clause is unsatisfiable.
-A list of non-empty clauses is equivalent to a fromula in CNF.
+A list of non-empty clauses is equivalent to a formula in CNF.
 
 We define the following utility function for converting a formula in CNF to
    a list of clauses (i.e., a list of lists of literals).
@@ -564,7 +564,7 @@ Clearly once an empty clause produced, there is no need to resolve further;
 
 The deduction theorem for propositional logic says that a sentence $\psi$
    follows from a finite list of sentences $\phi_1,...,\phi_n$ if and only
-   if the implication formed by the conjnuction of the $\phi_i$'s and $\psi$
+   if the implication formed by the conjunction of the $\phi_i$'s and $\psi$
    is a tautology:
 \[
 \phi_1,...,\phi_n\models\psi \iff \models\phi_1\land,...,\land\phi_n
@@ -582,7 +582,7 @@ def resolve(f):
 \end{code}
 
 First we define a function that, given a list of clauses, searches for two
-   that are resolvable and returns a tripple contaning the two clauses
+   that are resolvable and returns a triple containing the two clauses
    and the literal that makes them resolvable.
 
 \begin{code}
