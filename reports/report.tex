@@ -1,5 +1,3 @@
-% TODO: Explaination of the syntatic algorithm
-% TODO: Perhaps some more (or more detailed) benchmarking 
 \documentclass[a4paper,notitlepage]{scrartcl}
 
 \usepackage{amsmath}
@@ -23,7 +21,11 @@
 \section{Introduction}
 % TODO
 
-\section{Propositional Methods}
+\section{Proof procedures for Propositional Logic}
+
+We shall discuss two proof procedures: resolution and semantic tableaux. They
+are so-called refutation systems. That is, to prove a formula $\phi$, the
+procedures attempt to refute $\lnot\phi$.
 
 \subsection{Formula Representation}
 
@@ -627,14 +629,132 @@ def resolve_do(clauses):
     return resolve_do(clauses)
 \end{code}
 
+\subsection{Semantic Tableaux}
 
-\subsection{Disjunctive Normal Form}
-% TODO Tim
+The semantic tableaux procedure is closely related to disjunctive normal form
+(DNF). Analogous to CNF, a formula is in DNF if it is a disjunction of
+subformulas, each which either is a literal or a conjunction of literals. As a
+special case, a DNF formula may consist of only a single disjunct that is
+either a literal or a conjunction of literals. We have implemented a syntactic
+DNF algorithm that is symmetric to our implementation of the syntactic CNF
+algorithm. Because of this symmetry, we omit the DNF implementation here.
 
-\subsection{Tableaux}
-% TODO Tim
-\subsubsection{Implementation 1} 
-\subsubsection{Implementation 2 (using DNF)}
+To prove a formula $\phi$, the semantic tableaux procedure begins by taking
+$\lnot\phi$ and then repeatedly applying so-called expansion rules to it. These
+expansion rules expand $\lnot\phi$ into a tableau or tree with the following
+properties. Each node is labelled by a subformula of $\lnot\phi$. Each branch
+represents the conjunction of its nodes, while the tree itself represents the
+disjunction of its branches. If the expansion is completed, the tree represents
+a DNF formula equivalent to $\lnot\phi$.
+
+The expansion rules work as follows. Given a tree, take a branch and a formula
+$\psi$ on that branch. Then one of the following rules are applied.
+
+\begin{itemize}
+\item
+If $\psi$ is of the form $\lnot\lnot\chi$, then add $\chi$ as a new node to the
+branch.
+
+\item
+If $\psi$ is an alpha (i.e. conjunctive) formula, then add each conjunct of
+$\psi$ as a new node to the branch.
+
+\item
+If $\psi$ is a beta (i.e. disjunctive) formula, then add each disjunct as a
+new child to the last node of the branch.
+\end{itemize}
+
+We say that a branch is closed if it contains both a formula and its negation.
+A tableau is closed if all of its branches are closed. Thus $\phi$ is proved if
+the tableau for $\lnot\phi$ is closed.
+
+\subsubsection{A Simple Semantic Tableaux Implementation}
+
+The approach outlined above suggests a very simple semantic tableaux
+implementation. We first call the \texttt{dnf()} function to transform the
+formula into DNF. This will provide us with a finished tableau. We then only
+have to check if all branches are closed.
+
+\begin{code}
+def tableau_dnf(f):
+    return tableau_dnf_do(dnf(('not', f)))
+
+def tableau_dnf_do(f):
+    if literal(f):
+        return False
+    if f[0] == 'and':
+        return any(atom(g) and ('not', g) in f[1] for g in f[1])
+    else:
+        return all(tableau_dnf_do(g) for g in f[1])
+\end{code}
+
+The drawback of this approach is that it requires the DNF transformation to be
+completed before we can check for closure. It would be much more efficient if
+we perform closure tests at earlier stages in the DNF transformation. This is
+what we will look at now.
+
+\subsubsection{A Better Tableaux Implementation}
+
+Instead of using the \texttt{dnf()} function, we perform the expansion rules
+described above. But before applying an expansion rule on a branch, we check if
+the branch is closed. If it is, no further expansion of the branch is
+necessary. We use the following function to check whether a branch is closed.
+
+\begin{code}
+def tableau_closed(branch):
+    negations = [f for f in branch if f[0] == 'not']
+    for f in negations:
+        if f[1] in branch:
+            return True
+    return False
+\end{code}
+
+Now, the expansion rules are applied recursively by the following function. It
+takes a single branch as argument, applies one expansion rule to a formula on
+the branch and then calls itself with the resulting branch. If the expansion
+rule results in multiple branches, it calls itself separately for each branch.
+
+\begin{code}
+def tableau_do(branch):
+    if tableau_closed(branch):
+        return True
+
+    # Handle double negations and alpha formulas.
+    for f in branch:
+        if f[0] == 'not' and f[1][0] == 'not':
+            return tableau_do([g for g in branch if g != f] + [f[1][1]])
+        if f[0] == 'and':
+            return tableau_do([g for g in branch if g != f] + f[1])
+        if (f[0] == 'not' and f[1][0] == 'or'):
+            return tableau_do([g for g in branch if g != f] +
+                [('not', g) for g in f[1][1]])
+        if (f[0] == 'not' and f[1][0] == 'arrow'):
+            return tableau_do([g for g in branch if g != f] +
+                [f[1][1], ('not', f[1][2])])
+
+    # Handle beta formulas.
+    for f in branch:
+        if f[0] == 'or':
+            return all(tableau_do([h for h in branch if h != f] + [g])
+                for g in f[1])
+        if f[0] == 'not' and f[1][0] == 'and':
+            return all(tableau_do([h for h in branch if h != f] + [('not', g)])
+                for g in f[1][1])
+        if f[0] == 'arrow':
+            return (tableau_do([g for g in branch if g != f] + [('not', f[1])])
+                and tableau_do([g for g in branch if g != f] + [f[2]]))
+
+    return False
+\end{code}
+
+Finally, the tableaux procedure is initiated by negating the formula to be
+proved, putting it on a branch by itself and passing it to
+\texttt{tableau\_do()}:
+
+\begin{code}
+def tableau(f):
+    return tableau_do([('not', f)])
+\end{code}
 
 \section{Predicate Methods}
 
