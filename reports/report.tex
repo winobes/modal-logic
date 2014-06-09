@@ -581,6 +581,9 @@ def resolve(f):
     return resolve_do(fml_to_clauses(cnf(('not', f))))
 \end{code}
 
+Thus \texttt{resolve} shall return \texttt{True} when it finds 
+   contradictory clauses and \texttt{False} otherwise.
+
 First we define a function that, given a list of clauses, searches for two
    that are resolvable and returns a triple containing the two clauses
    and the literal that makes them resolvable.
@@ -679,8 +682,8 @@ Predictae logic formulas are defined inductively as follows:
 \item If \texttt{f} is a formula and \texttt{\{x$_1,\ldots,$x$_n$\}} is a set of
    variables then:
    \begin{enumerate}
-      \item \texttt{(forall, \{x$_1,\ldots,$x$_n$\}, f)} is a formula, and
-      \item \texttt{(exists, \{x$_1,\ldots,$x$_n$\}, f)} is a formula.
+      \item \texttt{('forall', \{x$_1,\ldots,$x$_n$\}, f)} is a formula, and
+      \item \texttt{('exists', \{x$_1,\ldots,$x$_n$\}, f)} is a formula.
    \end{enumerate}
 
 \item
