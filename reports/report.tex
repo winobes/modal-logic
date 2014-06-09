@@ -842,7 +842,61 @@ which returns a list of all function symbols (including constants) appearing
 % TODO Tim
 
 \subsection{Skolemization}
-% TODO Bill
+In this section we write $\phi(x_1,...,x_n)$ to emphasize that $\phi$ is
+   a formula with free variables $x_1,...,x_n$.
+
+A formula with free vairables is satisfiable if every sentence resulting
+   from an assignment of those free variables is satisfiable.
+Thus $\phi(x_1,...,x_n)$ is satisfiable if and only if $\forall x_1,...,
+   x_n\phi(x_1,...x_n)$ is satisfiable.
+Consider the formula $\exists y \phi(x, y)$ where $x$ is free and $y$
+   is bound by $\exists$.
+This forumla is equivalent to $\forall x\exists y\phi(x, y)$.
+Suppose that it is satisfiable in some model.
+In that model it must be that for every $x$, there is a $y$ such 
+   that $\phi(x,y)$ holds.
+In other words, $\phi$ defines a function from $x$ to $y$ in the model's
+   domain.
+But if that is true, then there is an extension of that model where
+   that function is given an explicit interpretation.
+Skolemization is the process of intruducing a new function in the formula
+   that stands for that formula.
+Thus $\exists y\phi(x, y)$ is satisfiable if and only
+   if $\phi(x, f(x))$ is satisfiable for some function $f$ not appearing
+   in $\phi$.
+
+More generally, if $f_1,...,f_n$ do not appear in $\phi$ then
+\begin{align}
+\exists y_1,...,y_n\phi(x_1,...,x_m, y_1,...,y_n)
+   &\equiv \phi(x_1,...,x_n, f_1(x_1,...,x_m),...,f_n(x_1,...,x_m))\text{ and}\\
+\lnot\forall y_1,...,y_n\phi(x_1,...,x_m, y_1,...,y_n)
+   &\equiv \lnot \phi(x_1,...,x_n, f_1(x_1,...,x_m),...,f_n(x_1,...,x_m)).
+\end{align}
+
+By using this Skolemization technique on formulas of one of the
+   forms above, we reduce the cases new in the predicate satisfaction
+   problem to formulas beginning with $\forall$ and $\lnot\exists$. 
+
+The following Python takes the formula in the scope of the 
+   existentia quantifier (\texttt{f}) and the variables that it ranges
+   over (\texttt{exists\_vars}), and returns the skolemized formula.
+The parameter \texttt{func\_counter} can be used to keep track of Skolem 
+   functions that have already been used.
+
+\begin{code}
+def tableau_skolemize(f, exists_vars, func_counter):
+    free_vars = get_free_vars(f, exists_vars)
+    used_funcs = get_funcs(f)
+
+    g = f
+    for v in exists_vars:
+        while 'f' + str(func_counter) in used_funcs:
+            func_counter += 1
+        skolem_func = 'f' + str(func_counter)
+        used_funcs.append(skolem_func)
+        g = subst_formula({v:(skolem_func, list(free_vars))}, g)
+    return (g, func_counter + 1)
+\end{code}
 
 \subsection{Tableaux}
 % TODO Later
