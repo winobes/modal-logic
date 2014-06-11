@@ -418,10 +418,9 @@ def tableau_expand_do(branches, gdepth, gcounter, skolem_func_counter, uni_var_c
 
             if f[0] == 'and':
                 util.dprint('alpha rule on', fml_to_str(f))
-                branches.remove(branch) #XXX 
                 branch.remove(f)
                 subs = [tableau_canonize(g) for g in f[1]]
-                branches.append(branch + subs)
+                branch += subs
                 return tableau_expand_do(branches, gdepth, gcounter, skolem_func_counter, uni_var_counter)
 
         # Handle beta formulas.
@@ -441,12 +440,10 @@ def tableau_expand_do(branches, gdepth, gcounter, skolem_func_counter, uni_var_c
 
             if f[0] == 'exists':
                 util.dprint('delta rule on', fml_to_str(f))
-                branches.remove(branch)
                 branch.remove(f)
                 g, skolem_func_counter = tableau_skolemize(f[2], f[1],
                     skolem_func_counter)
                 branch.append(tableau_canonize(g))
-                branches.append(branch)
                 return tableau_expand_do(branches, gdepth, gcounter, skolem_func_counter, uni_var_counter)
 
         # Handle gamma formulas.
@@ -454,7 +451,6 @@ def tableau_expand_do(branches, gdepth, gcounter, skolem_func_counter, uni_var_c
 
             if f[0] == 'all':
                 util.dprint('gamma rule on', fml_to_str(f))
-                branches.remove(branch)
                 gcounter.append(f)
                 branch.remove(f)
                 if gcounter.count(f) < gdepth:
@@ -465,7 +461,6 @@ def tableau_expand_do(branches, gdepth, gcounter, skolem_func_counter, uni_var_c
                     uni_var_counter += 1
                     new_f = subst_formula({var:parameter}, new_f)
                 branch.append(tableau_canonize(new_f))
-                branches.append(branch)
                 return tableau_expand_do(branches, gdepth, gcounter, skolem_func_counter, uni_var_counter)
 
     return branches
