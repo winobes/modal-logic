@@ -400,8 +400,8 @@ def tableau(f, gdepth):
     branches = tableau_expand([('not', f)], gdepth)
     return tableau_closed(branches)
 
-def tableau_expand(branch, qdepth):
-    return tableau_expand_do([branch], qdepth, [], 0, 0)
+def tableau_expand(branch, gdepth):
+    return tableau_expand_do([branch], gdepth, [], 0, 0)
 
 def tableau_expand_do(branches, gdepth, gcounter, skolem_func_counter, uni_var_counter):
     util.dprint('\ntableau_expand_do:')
