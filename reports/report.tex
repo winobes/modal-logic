@@ -899,7 +899,185 @@ def tableau_skolemize(f, exists_vars, func_counter):
 \end{code}
 
 \subsection{Tableaux}
-% TODO Later
 
+In the case of predicate logic, two new rules are added to handle quantifiers.
+
+\begin{itemize}
+\item
+If $\psi$ is a delta (i.e. existential) formula, then replace it with its
+skolemization.
+
+\item
+If $\psi$ is a gamma (i.e. universal) formula, then add to the branch a copy of
+$\psi$ in which a the universally quantified variable has been replaced with a
+free variable that does not occur elsewhere in the tree. Thus, if $\psi =
+\forall x_1, \ldots, x_n \chi(x_1, \ldots, x_n)$, then add $\chi(y_1, \ldots,
+y_n)$ where $y_1, \ldots, y_n$ are new free variables.
+\end{itemize}
+
+In order for a branch to close, it has to contain both a formula $P$ and $\lnot
+P$. Obviously, this is the case if we have $P(x1, \ldots, x_n)$ and $\lnot
+P(x1, \ldots, x_n)$. However, if we have $P(x1, \ldots, x_n)$ and $\lnot P(y_1,
+\ldots, y_n)$, we need to apply unification to the terms of $P$ and $\lnot P$.
+Since we would like to close the whole tree, we need to choose unifications
+that not just close a single branch, but also are compatible with the
+unifications needed to close other branches.
+
+In some tableau proofs, it necessary to unify a variable not only with one
+other term, but with two or more. For this reason, it may be necessary to apply
+the gamma rule to a formule more than once. Unfortunately, given the
+undecidability of first-order logic, often it is not known in advance how often
+the gamma rule should be applied. An implementation of a first-order tableaux
+proof procedure therefore needs to limit the number of gamma rule applications.
+This limit should be specified along with the formula to be proved. In our
+implementation, this limit is called \texttt{gdepth}.
+
+We use the \texttt{tableau\_canonize()} function to transform formulas into a
+canonical type. That is, alpha formulas are transformed into formulas with
+$\land$ as their main operator, gamma formulas are transformed such that
+$\forall$ is their main operator and so forth. To determine the type of a
+formula, this allows us simply to determine its main oeprator. The
+implementation of the function is as follows.
+
+\begin{code}
+def tableau_canonize(f):
+
+    # Handle double negations.
+    if f[0] == 'not' and f[1][0] == 'not':
+        return tableau_canonize(f[1][1])
+
+    # Handle alpha formulas.
+    if f[0] == 'and':
+        return f 
+    if f[0] == 'not' and f[1][0] == 'or':
+        return ('and', [('not', g) for g in f[1][1]])
+    if f[0] == 'not' and f[1][0] == 'arrow':
+        return ('and', [f[1][1], ('not', f[1][2])])
+
+    # Handle beta formulas.
+    if f[0] == 'or':
+        return f 
+    if f[0] == 'not' and f[1][0] == 'and':
+        return ('or', [('not', g) for g in f[1][1]])
+    if f[0] == 'arrow':
+        return ('or', [('not', f[1]), f[2]])
+
+    # Handle delta formulas.
+    if f[0] == 'exists':
+        return f 
+    if f[0] == 'not' and f[1][0] == 'all':
+        return ('exists', f[1][1], ('not', f[1][2]))
+
+    # Handle gamma formulas.
+    if f[0] == 'all':
+        return f
+    if f[0] == 'not' and f[1][0] == 'exists':
+        return ('all', f[1][1], ('not', f[1][2]))
+
+    # Handle literals. 
+    else:
+        return f 
+\end{code}
+
+The beginning of our implementation, then, is as follows.
+
+\begin{code}
+def tableau(f, gdepth):
+    branches = tableau_expand(f, gdepth)
+    return tableau_closed(branches)
+
+def tableau_expand(f, qdepth):
+    branch = [tableau_canonize(('not', f))]
+    return tableau_expand_do([branch], qdepth, [], 0, 0)
+\end{code}
+
+The real work is done by \textt{tableau\_expand\_do()}. This function takes the
+full tableau as a list of branches, the `gdepth', a counter for the Skolem
+functions and a counter for the free variables. These two counters are used to
+ensure newly introduced Skolem functions and free variables are unique.
+
+\begin{code}
+def tableau_expand_do(branches, gdepth, gcounter, skolem_func_counter, uni_var_counter):
+    for branch in branches[:]:
+        # Handle alpha formulas.
+        for f in branch:
+
+            if f[0] == 'and':
+                branch.remove(f)
+                subs = [tableau_canonize(g) for g in f[1]]
+                branch += subs
+                return tableau_expand_do(branches, gdepth, gcounter, skolem_func_counter, uni_var_counter)
+
+        # Handle beta formulas.
+        for f in branch:
+
+            if f[0] == 'or':
+                branches.remove(branch)
+                branch.remove(f)
+                subs = [tableau_canonize(g) for g in f[1]]
+                for g in subs:
+                    branches.append(branch + [g])
+                return tableau_expand_do(branches, gdepth, gcounter, skolem_func_counter, uni_var_counter)
+
+        # Handle delta formulas (before gamma formulas).
+        for f in branch:
+
+            if f[0] == 'exists':
+                branch.remove(f)
+                g, skolem_func_counter = tableau_skolemize(f[2], f[1],
+                    skolem_func_counter)
+                branch.append(tableau_canonize(g))
+                return tableau_expand_do(branches, gdepth, gcounter, skolem_func_counter, uni_var_counter)
+
+        # Handle gamma formulas.
+        for f in branch:
+
+            if f[0] == 'all':
+                gcounter.append(f)
+                branch.remove(f)
+                if gcounter.count(f) < gdepth:
+                    branch.append(f)
+                new_f = f[2]
+                for var in f[1]:
+                    parameter =  'x' + str(uni_var_counter)
+                    uni_var_counter += 1
+                    new_f = subst_formula({var:parameter}, new_f)
+                branch.append(tableau_canonize(new_f))
+                return tableau_expand_do(branches, gdepth, gcounter, skolem_func_counter, uni_var_counter)
+
+    return branches
+\end{code}
+
+This function expands all branches in the tableau by repeated application of
+the expansion rules. Gamma rules are applied until a `gdepth' of 0 has been
+reached. If the tableau expansion is complete, the algorithm moves to the
+closure stage. In this stage we visit all branches of the tree, and try to
+close each of them, taking into account all substitutions from previous branch
+closures.
+
+\begin{code}
+def tableau_closed(branches):
+    substs = {}
+    for branch in branches:
+        newsubsts = tableau_branch_closed(branch, substs)
+        if newsubsts == None:
+            return False
+        substs.update(newsubsts)
+    return True
+
+def tableau_branch_closed(branch, substs):
+    positives = [f for f in branch if pred(f)]
+    negatives = [f for f in branch if f[0] == 'not']
+
+    for f in positives:
+        for g in negatives:
+            if f[0] == g[1][0]:
+                f_terms = subst_termlist(substs, f[1])
+                g_terms = subst_termlist(substs, g[1][1])
+                newsubsts = unify_termlists(f_terms, g_terms)
+                if newsubsts != None:
+                    return newsubsts
+    return None
+\end{code}
 
 \end{document}
