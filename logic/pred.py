@@ -402,9 +402,9 @@ def tableau(f, gdepth):
 
 def tableau_expand(f, qdepth):
     branch = [tableau_canonize(('not', f))]
-    return tableau_expand_do([branch], qdepth, [], 0, 0)
+    return tableau_expand_do([branch], qdepth, 0, 0)
 
-def tableau_expand_do(branches, gdepth, gcounter, skolem_func_counter, uni_var_counter):
+def tableau_expand_do(branches, gdepth, skolem_func_counter, uni_var_counter):
     util.dprint('\ntableau_expand_do:')
     for branch in branches:
         util.dprint('branch:')
@@ -421,7 +421,7 @@ def tableau_expand_do(branches, gdepth, gcounter, skolem_func_counter, uni_var_c
                 branch.remove(f)
                 subs = [tableau_canonize(g) for g in f[1]]
                 branch += subs
-                return tableau_expand_do(branches, gdepth, gcounter, skolem_func_counter, uni_var_counter)
+                return tableau_expand_do(branches, gdepth, skolem_func_counter, uni_var_counter)
 
         # Handle beta formulas.
         for f in branch:
@@ -433,7 +433,7 @@ def tableau_expand_do(branches, gdepth, gcounter, skolem_func_counter, uni_var_c
                 subs = [tableau_canonize(g) for g in f[1]]
                 for g in subs:
                     branches.append(branch + [g])
-                return tableau_expand_do(branches, gdepth, gcounter, skolem_func_counter, uni_var_counter)
+                return tableau_expand_do(branches, gdepth, skolem_func_counter, uni_var_counter)
 
         # Handle delta formulas (before gamma formulas).
         for f in branch:
@@ -444,24 +444,24 @@ def tableau_expand_do(branches, gdepth, gcounter, skolem_func_counter, uni_var_c
                 g, skolem_func_counter = tableau_skolemize(f[2], f[1],
                     skolem_func_counter)
                 branch.append(tableau_canonize(g))
-                return tableau_expand_do(branches, gdepth, gcounter, skolem_func_counter, uni_var_counter)
+                return tableau_expand_do(branches, gdepth, skolem_func_counter, uni_var_counter)
 
         # Handle gamma formulas.
         for f in branch:
 
             if f[0] == 'all':
                 util.dprint('gamma rule on', fml_to_str(f))
-                gcounter.append(f)
                 branch.remove(f)
-                if gcounter.count(f) < gdepth:
+                if gdepth > 0:
                     branch.append(f)
+                    gdepth -= 1
                 new_f = f[2]
                 for var in f[1]:
                     parameter =  'x' + str(uni_var_counter)
                     uni_var_counter += 1
                     new_f = subst_formula({var:parameter}, new_f)
                 branch.append(tableau_canonize(new_f))
-                return tableau_expand_do(branches, gdepth, gcounter, skolem_func_counter, uni_var_counter)
+                return tableau_expand_do(branches, gdepth, skolem_func_counter, uni_var_counter)
 
     return branches
 

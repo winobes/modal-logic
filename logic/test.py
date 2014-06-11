@@ -669,7 +669,7 @@ def test_pred_tableaux_2():
 
     for f in fmls:
         print(pred.fml_to_str(f))
-        print(pred.tableau(f, 10))
+        print(pred.tableau(f, 16))
         print()
 
 # http://www.cs.miami.edu/~tptp/cgi-bin/SeeTPTP?Category=Problems&Domain=PUZ&File=PUZ031+2.p
