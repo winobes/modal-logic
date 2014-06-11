@@ -397,10 +397,11 @@ def unify_terms(t1, t2):
 #
 
 def tableau(f, gdepth):
-    branches = tableau_expand([('not', f)], gdepth)
+    branches = tableau_expand(f, gdepth)
     return tableau_closed(branches)
 
-def tableau_expand(branch, qdepth):
+def tableau_expand(f, qdepth):
+    branch = [tableau_canonize(('not', f))]
     return tableau_expand_do([branch], qdepth, [], 0, 0)
 
 def tableau_expand_do(branches, gdepth, gcounter, skolem_func_counter, uni_var_counter):
@@ -414,98 +415,103 @@ def tableau_expand_do(branches, gdepth, gcounter, skolem_func_counter, uni_var_c
     for branch in branches[:]:
         # Handle alpha formulas.
         for f in branch:
-            fml_type, subs = tableau_fml_type(f)    
 
-            if fml_type == 'alpha':
+            if f[0] == 'and':
                 util.dprint('alpha rule on', fml_to_str(f))
-                branches.remove(branch)
+                branches.remove(branch) #XXX 
                 branch.remove(f)
+                subs = [tableau_canonize(g) for g in f[1]]
                 branches.append(branch + subs)
                 return tableau_expand_do(branches, gdepth, gcounter, skolem_func_counter, uni_var_counter)
 
         # Handle beta formulas.
         for f in branch:
-            fml_type, subs = tableau_fml_type(f)    
 
-            if fml_type == 'beta':
+            if f[0] == 'or':
                 util.dprint('beta rule on', fml_to_str(f))
                 branches.remove(branch)
                 branch.remove(f)
+                subs = [tableau_canonize(g) for g in f[1]]
                 for g in subs:
                     branches.append(branch + [g])
                 return tableau_expand_do(branches, gdepth, gcounter, skolem_func_counter, uni_var_counter)
 
         # Handle delta formulas (before gamma formulas).
         for f in branch:
-            fml_type, subs = tableau_fml_type(f)    
 
-            if fml_type == 'delta':
+            if f[0] == 'exists':
                 util.dprint('delta rule on', fml_to_str(f))
                 branches.remove(branch)
                 branch.remove(f)
-                g, skolem_func_counter = tableau_skolemize(subs[1], subs[0],
+                g, skolem_func_counter = tableau_skolemize(f[2], f[1],
                     skolem_func_counter)
-                branch.append(g)
+                branch.append(tableau_canonize(g))
                 branches.append(branch)
                 return tableau_expand_do(branches, gdepth, gcounter, skolem_func_counter, uni_var_counter)
 
         # Handle gamma formulas.
         for f in branch:
-            fml_type, subs = tableau_fml_type(f)
 
-            if fml_type == 'gamma':
+            if f[0] == 'all':
                 util.dprint('gamma rule on', fml_to_str(f))
                 branches.remove(branch)
                 gcounter.append(f)
                 branch.remove(f)
                 if gcounter.count(f) < gdepth:
                     branch.append(f)
-                new_f = subs[1]
-                for var in subs[0]:
+                new_f = f[2]
+                for var in f[1]:
                     parameter =  'x' + str(uni_var_counter)
                     uni_var_counter += 1
                     new_f = subst_formula({var:parameter}, new_f)
-                branch.append(new_f)
+                branch.append(tableau_canonize(new_f))
                 branches.append(branch)
                 return tableau_expand_do(branches, gdepth, gcounter, skolem_func_counter, uni_var_counter)
 
     return branches
 
-# Returns a tuple the first element of which is the type
-# If 'alpha' or 'beta', the second element is a list
-# of subformulas.
-# If 'gamma' or 'delta', the second element is a tuple
-# contaning the quantified variables and the subformula.
-def tableau_fml_type(f):
+# Rewrites formulas in canonical form:
+# Alpha formulas have 'and'    as the main operator.
+# Beta  formulas have 'or'     as the main operator.
+# Delta formulas have 'exists' as the main operator.
+# Gamma formulas have 'all'    as the main operator.
+def tableau_canonize(f):
 
+    # Handle double negations.
     if f[0] == 'not' and f[1][0] == 'not':
-        return ('alpha', [f[1][1]])
+        return tableau_canonize(f[1][1])
+
+    # Handle alpha formulas.
     if f[0] == 'and':
-        return ('alpha', f[1])
+        return f 
     if f[0] == 'not' and f[1][0] == 'or':
-        return ('alpha', [('not', g) for g in f[1][1]])
+        return ('and', [('not', g) for g in f[1][1]])
     if f[0] == 'not' and f[1][0] == 'arrow':
-        return ('alpha', [f[1][1], ('not', f[1][2])])
+        return ('and', [f[1][1], ('not', f[1][2])])
 
+    # Handle beta formulas.
     if f[0] == 'or':
-        return ('beta', f[1])
+        return f 
     if f[0] == 'not' and f[1][0] == 'and':
-        return ('beta', [('not', g) for g in f[1][1]])
+        return ('or', [('not', g) for g in f[1][1]])
     if f[0] == 'arrow':
-        return ('beta', [('not', f[1]), f[2]])
+        return ('or', [('not', f[1]), f[2]])
 
+    # Handle delta formulas.
     if f[0] == 'exists':
-        return ('delta', (f[1], f[2]))
+        return f 
     if f[0] == 'not' and f[1][0] == 'all':
-        return ('delta', (f[1][1], ('not', f[1][2])))
+        return ('exists', f[1][1], ('not', f[1][2]))
 
+    # Handle gamma formulas.
     if f[0] == 'all':
-        return ('gamma', (f[1], f[2]))
+        return f
     if f[0] == 'not' and f[1][0] == 'exists':
-        return ('gamma', (f[1][1], ('not', f[1][2])))
+        return ('all', f[1][1], ('not', f[1][2]))
 
+    # Handle literals. 
     else:
-        return ('literal', f)
+        return f 
 
 def tableau_skolemize(f, exists_vars, func_counter):
     free_vars = get_free_vars(f, exists_vars)
