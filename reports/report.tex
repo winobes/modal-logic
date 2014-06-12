@@ -13,7 +13,7 @@
 
 \title{Automated Theorem Proving in Python}
 \author{Bill Noble\\ Tim van der Molen}
-\date{January 2014}
+\date{June 2014}
 
 \begin{document}
 \maketitle
@@ -26,7 +26,7 @@ of these are semantic tableaux and resolution. In this report, we shall discuss
 these two proof procedures and our implementation of them in the Python
 programming language.
 
-\section{Proof procedures for Propositional Logic}
+\section{Proof Procedures for Propositional Logic}
 
 We shall discuss two proof procedures: resolution and semantic tableaux. They
 are so-called refutation systems. That is, to prove a formula $\phi$, the
@@ -76,11 +76,10 @@ As a special case, a CNF formula may consist of only one conjunct, in which
 case it simply is either a literal or a disjunction of literals. 
 CNF is very useful in automatic theorem proving, because its structure allows
 for efficient formula evaluation.
-In this report we discuss and compare two algorithms to transform arbitrary
+We shall discuss and compare two algorithms to transform arbitrary
 propositional formulas into CNF.
 The first algorithm employs syntactical manipulation while the second has a
 semantic approach relying on truth tables.
-The two algorithms have been implemented in the Python programming language.
 
 \subsubsection{The Syntactic Algorithm}
 
@@ -361,7 +360,8 @@ Rather than converting $f$ to CNF directly, the semantic algorithm
         constructs a truth table and uses it to produce a formula in CNF
         that is logically equivalent to $f$ (i.e. it is true at exactly
         the rows where $f$ is true). 
-An analogous and more intuitive strategy exists to produce a formula in DNF.
+An analogous and more intuitive strategy exists to produce a formula in
+disjunctive normal form (DNF).
 For example, suppose one would like to transform the formula
 $(p \lor q \to q) \to r$ into DNF.
 Consider the truth table of this formula:
@@ -488,7 +488,7 @@ The columns represent the number of unique atoms in a formula while the rows
 represent the total number of atoms occurring in that formula.
 
 \begin{figure}[!ht]
-\caption{Semantic vs. Syntactic CNF time differential}
+\caption{Semantic vs. syntactic CNF time differential}
 \includegraphics[
     width=\textwidth,
 ]{report_colors_cropped.pdf}
@@ -542,13 +542,13 @@ def fml_to_clauses(f):
 The rule at the core of resolution is as follows:
 Given two clauses:
 \begin{align*}
-A &= [a_1,...,a_{i-1}, p, a_{i},...,a_n]\text{ and }\\
-B &= [b_1,...,b_{j-1},\lnot p, b_{j}, ..., b_m]
+A &= [a_1,\ldots,a_{i-1}, p, a_{i},\ldots,a_n]\text{ and }\\
+B &= [b_1,\ldots,b_{j-1},\lnot p, b_{j}, \ldots, b_m]
 \end{align*}
 such that each $a_i$ and $b_i$ are literals and $p$ is an atomic formula,
 if $A$ and $B$ are both satisfied, then so 
    is $C = [a_1,..., a_n, b_1..., b_m]$.
-Two clauses of the form $A$ and $B$ are call \emph{resolvable}.
+Two clauses of the form $A$ and $B$ are called \emph{resolvable}.
 We apply the resolution rule to a list of clauses by removing two resolvable
    clauses and replacing them with the result of resolving them.
 Repeated application of the resolution rule will result in a list of clauses
@@ -588,7 +588,7 @@ def resolve(f):
     return resolve_do(fml_to_clauses(cnf(('not', f))))
 \end{code}
 
-Thus \texttt{resolve} shall return \texttt{True} when it finds 
+Thus \texttt{resolve()} shall return \texttt{True} when it finds 
    contradictory clauses and \texttt{False} otherwise.
 
 First we define a function that, given a list of clauses, searches for two
@@ -764,7 +764,7 @@ def tableau(f):
 \section{Predicate Methods}
 
 \subsection{Formula Representation}
-In propositional logic, atomic forumlas are structureless; only their
+In propositional logic, atomic formulas are structureless; only their
    names matter.
 Thus we were free to represent propositions simply as strings of characters.
 
@@ -774,11 +774,11 @@ A \emph{term} refers (rigidly or as a variable) to a single individual.
 
 Formally, terms are defined inductively:
 \begin{enumerate}
-\item If \texttt{s} is a string beginning with \texttt{'w','x','y'} or 
-   \texttt{'z'}, then \texttt{s} is a variable.
+\item If \texttt{s} is a string beginning with `w', `x', `y' or `z', then
+   \texttt{s} is a variable.
 A variable is a term.
-\item If \texttt{s} is a string beginning with \texttt{'a','b','c','d','e','f'} 
-   or \texttt{'g'}, then \texttt{s} is a function symbol.
+\item If \texttt{s} is a string beginning with `a', `b', `c', `d', `e', `f' or
+   `g', then \texttt{s} is a function symbol.
 \item If \texttt{s} is a function symbol then \texttt{(s, [])} is a constant.
 A constant is a term.
 \item  
@@ -799,16 +799,16 @@ def constant(x):
     return function(x) and len(x[1]) == 0 
 \end{code}
 
-Predictae logic formulas are defined inductively as follows:
+Predicate logic formulas are defined inductively as follows:
 \begin{enumerate}
-\item If \texttt{s} is a string beginning with \texttt{'P','Q','R'} or \texttt{'S'}, and 
+\item If \texttt{s} is a string beginning with `P', `Q', `R' or `S', and 
    \texttt{[t$_1,\ldots,$t$_n$]} is a list of terms, then \texttt{(s, [t$_1,
       \ldots, $t$_n$])} is an atomic formula.
-\item If \texttt{f} is a formula and \texttt{\{x$_1,\ldots,$x$_n$\}} is a set of
+\item If \texttt{f} is a formula and \texttt{\string{x$_1,\ldots,$x$_n$\string}} is a set of
    variables then:
    \begin{enumerate}
-      \item \texttt{('forall', \{x$_1,\ldots,$x$_n$\}, f)} is a formula, and
-      \item \texttt{('exists', \{x$_1,\ldots,$x$_n$\}, f)} is a formula.
+      \item \texttt{('forall', \string{x$_1,\ldots,$x$_n$\string}, f)} is a formula, and
+      \item \texttt{('exists', \string{x$_1,\ldots,$x$_n$\string}, f)} is a formula.
    \end{enumerate}
 
 \item
@@ -946,7 +946,7 @@ Thus $\phi(x_1,...,x_n)$ is satisfiable if and only if $\forall x_1,...,
    x_n\phi(x_1,...x_n)$ is satisfiable.
 Consider the formula $\exists y \phi(x, y)$ where $x$ is free and $y$
    is bound by $\exists$.
-This forumla is equivalent to $\forall x\exists y\phi(x, y)$.
+This formula is equivalent to $\forall x\exists y\phi(x, y)$.
 Suppose that it is satisfiable in some model.
 In that model it must be that for every $x$, there is a $y$ such 
    that $\phi(x,y)$ holds.
@@ -961,19 +961,19 @@ Thus $\exists y\phi(x, y)$ is satisfiable if and only
    in $\phi$.
 
 More generally, if $f_1,...,f_n$ do not appear in $\phi$ then
-\begin{align}
+\begin{align*}
 \exists y_1,...,y_n\phi(x_1,...,x_m, y_1,...,y_n)
    &\equiv \phi(x_1,...,x_n, f_1(x_1,...,x_m),...,f_n(x_1,...,x_m))\text{ and}\\
 \lnot\forall y_1,...,y_n\phi(x_1,...,x_m, y_1,...,y_n)
    &\equiv \lnot \phi(x_1,...,x_n, f_1(x_1,...,x_m),...,f_n(x_1,...,x_m)).
-\end{align}
+\end{align*}
 
 By using this Skolemization technique on formulas of one of the
    forms above, we reduce the cases new in the predicate satisfaction
    problem to formulas beginning with $\forall$ and $\lnot\exists$. 
 
 The following Python takes the formula in the scope of the 
-   existentia quantifier (\texttt{f}) and the variables that it ranges
+   existential quantifier (\texttt{f}) and the variables that it ranges
    over (\texttt{exists\_vars}), and returns the skolemized formula.
 The parameter \texttt{func\_counter} can be used to keep track of Skolem 
    functions that have already been used.
@@ -1092,7 +1092,8 @@ functions and a counter for the free variables. These two counters are used to
 ensure newly introduced Skolem functions and free variables are unique.
 
 \begin{code}
-def tableau_expand_do(branches, gdepth, gcounter, skolem_func_counter, uni_var_counter):
+def tableau_expand_do(branches, gdepth, gcounter, skolem_func_counter, \
+uni_var_counter):
     for branch in branches[:]:
         # Handle alpha formulas.
         for f in branch:
@@ -1101,7 +1102,8 @@ def tableau_expand_do(branches, gdepth, gcounter, skolem_func_counter, uni_var_c
                 branch.remove(f)
                 subs = [tableau_canonize(g) for g in f[1]]
                 branch += subs
-                return tableau_expand_do(branches, gdepth, gcounter, skolem_func_counter, uni_var_counter)
+                return tableau_expand_do(branches, gdepth, gcounter, \
+		    skolem_func_counter, uni_var_counter)
 
         # Handle beta formulas.
         for f in branch:
@@ -1112,7 +1114,8 @@ def tableau_expand_do(branches, gdepth, gcounter, skolem_func_counter, uni_var_c
                 subs = [tableau_canonize(g) for g in f[1]]
                 for g in subs:
                     branches.append(branch + [g])
-                return tableau_expand_do(branches, gdepth, gcounter, skolem_func_counter, uni_var_counter)
+                return tableau_expand_do(branches, gdepth, gcounter, \
+		    skolem_func_counter, uni_var_counter)
 
         # Handle delta formulas (before gamma formulas).
         for f in branch:
@@ -1122,7 +1125,8 @@ def tableau_expand_do(branches, gdepth, gcounter, skolem_func_counter, uni_var_c
                 g, skolem_func_counter = tableau_skolemize(f[2], f[1],
                     skolem_func_counter)
                 branch.append(tableau_canonize(g))
-                return tableau_expand_do(branches, gdepth, gcounter, skolem_func_counter, uni_var_counter)
+                return tableau_expand_do(branches, gdepth, gcounter, \
+		    skolem_func_counter, uni_var_counter)
 
         # Handle gamma formulas.
         for f in branch:
@@ -1138,7 +1142,8 @@ def tableau_expand_do(branches, gdepth, gcounter, skolem_func_counter, uni_var_c
                     uni_var_counter += 1
                     new_f = subst_formula({var:parameter}, new_f)
                 branch.append(tableau_canonize(new_f))
-                return tableau_expand_do(branches, gdepth, gcounter, skolem_func_counter, uni_var_counter)
+                return tableau_expand_do(branches, gdepth, gcounter, \
+		    skolem_func_counter, uni_var_counter)
 
     return branches
 \end{code}
