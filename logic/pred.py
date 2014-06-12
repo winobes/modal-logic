@@ -237,7 +237,7 @@ def parse_args(s):
 # Convert a formula to a string.
 def fml_to_str(f):
     if pred(f):
-        s = f[0] + args_to_str(f[1])
+        s = f[0] + '(' + termlist_to_str(f[1]) + ')'
     elif f[0] == 'not':
         s = '~' + subfml_to_str(f[1])
     elif f[0] == 'and' or f[0] == 'or':
@@ -267,15 +267,12 @@ def subfml_to_str(f):
         return '(' + fml_to_str(f) + ')'
     return fml_to_str(f)
 
-# Helper function for fml_to_str(): convert a list of predicate or function
-# arguments to a string.
-def args_to_str(a):
-    s = '('
-    for x in a:
-        s += term_to_str(x)
-        s += ', '
+# Convert a list of terms to a string.
+def termlist_to_str(termlist):
+    s = ''
+    for t in termlist:
+        s += term_to_str(t) + ', '
     s = s[:-2]
-    s += ')'
     return s
 
 # Convert a term to a string.
@@ -286,17 +283,16 @@ def term_to_str(term):
         if len(term[1]) == 0:
             return term[0]
         else:
-            return term[0] + args_to_str(term[1])
+            return term[0] + '(' + termlist_to_str(term[1]) + ')'
 
 # Convert a substitution to a string.
 def subst_to_str(subst):
-    if subst == None:
-        return '{}'
     string = '{'
-    for v in subst:
-        string += v + ' -> ' + term_to_str(subst[v]) + ', '
-    if len(string) > 1:
-        string = string[:-2]
+    if subst != None:
+        for v in subst:
+            string += v + ' -> ' + term_to_str(subst[v]) + ', '
+        if len(string) > 1:
+            string = string[:-2]
     string += '}'
     return string
 

@@ -207,7 +207,7 @@ def test5():
     print(pred.fml_to_str(f))
     print(pred.fml_to_str(pred.skolemize(f)))
 
-def test6():
+def test_unification():
     tests = [
         (['x'],                                   ['x']),
         (['x'],                                   ['y']),
