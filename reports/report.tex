@@ -839,7 +839,97 @@ which returns a list of all function symbols (including constants) appearing
    in \texttt{f}.
 
 \subsection{Unification}
-% TODO Tim
+
+A substitution, as we use the term here, is the replacement of a variable by a
+term. If $\sigma$ is a substitution and $t$ a term, we write $\sigma t$ to
+denote the result of applying $\sigma$ to $t$.
+
+We represent substitutions in Python by dictionaries which essentially are
+mappings. Dictionaries in Python are enclosed by curly braces and have
+comma-separated elements. Dictionary elements themselves are colon-separated
+key-value pairs.
+
+A substitution may be applied to a list of terms (such as the arguments of a
+predicate or function). Additionally, substitutions may be composed. We use the
+following functions for these purposes.
+
+\begin{code}
+def subst_termlist(subst, termlist):
+    return [subst_term(subst, t) for t in termlist]
+
+def subst_term(subst, term):
+    if variable(term):
+        return subst[term] if term in subst else term
+    else:
+        return (term[0], subst_termlist(subst, term[1]))
+
+def compose_subst(s1, s2):
+    comp = {}
+    comp.update(s1)
+    comp.update({t:subst_term(s1, s2[t]) for t in s2})
+    return comp
+\end{code}
+
+A unification algorithm is an algorithm that searches for a substitution that
+makes two lists of terms equal. That is, given two lists $(t_1, \ldots, t_n)$
+and $(u_1, \ldots, u_n$) of terms, a unification algorithm searches for a
+substitution $\sigma$ such that $(\sigma t_1, \ldots, \sigma t_n) = (\sigma
+u_1, \ldots, \sigma u_n)$. Unification will be used in the tableaux proof
+procedure for predicate logic that we will discuss later.
+
+Our unification implementation is as follows. It uses the built-in
+\texttt{zip()} function, which works as follows. Given two lists $(a_1, \ldots,
+a_n)$ and $(b_1, \ldots, b_n)$, \texttt{zip()} returns essentially a list
+$(c_1, \ldots, c_n)$ such that $c_i = (a_i, b_i)$.
+
+\begin{code}
+def unify_termlists(t1, t2):
+    if len(t1) == len(t2) == 0:
+        return {}
+    if len(t1) != len(t2):
+        return None
+    else:
+        subst = {}
+        for (u1, u2) in zip(t1, t2):
+            v1 = subst_term(subst, u1)
+            v2 = subst_term(subst, u2)
+            newsubst = unify_terms(v1, v2)
+            if newsubst == None:
+                return None
+            subst = compose_subst(newsubst, subst)
+        return subst
+
+def unify_terms(t1, t2):
+    if variable(t1) and variable(t2):
+        if t1 == t2:
+            return {}
+        else:
+            return {t1:t2}
+    if variable(t1) and not variable(t2):
+        if t1 in variables_in_term(t2):
+            return None
+        else:
+            return {t1:t2}
+    if not variable(t1) and variable(t2):
+        if t2 in variables_in_term(t1):
+            return None
+        else:
+            return {t2:t1}
+    else:
+        if t1[0] != t2[0]:
+            return None
+        else:
+            return unify_termlists(t1[1], t2[1])
+
+def variables_in_term(term):
+    if variable(term):
+        return {term}
+    else:
+        var = set()
+        for t in term[1]:
+            var |= variables_in_term(t)
+        return var
+\end{code}
 
 \subsection{Skolemization}
 In this section we write $\phi(x_1,...,x_n)$ to emphasize that $\phi$ is
