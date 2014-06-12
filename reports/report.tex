@@ -579,55 +579,118 @@ Thus the problem of checking if $\phi_1,...,\phi_n\models\psi$ is reduced
    to checking whether or not a single sentence is contradictory.
 
 \begin{code}
-def resolve(f):
-    return resolve_do(fml_to_clauses(cnf(('not', f))))
+def resolve_cnf(f):
+    return resolve_cnf_do(cnf_to_clauses(cnf(('not', f))))
 \end{code}
 
 Thus \texttt{resolve} shall return \texttt{True} when it finds 
    contradictory clauses and \texttt{False} otherwise.
 
-First we define a function that, given a list of clauses, searches for two
-   that are resolvable and returns a triple containing the two clauses
-   and the literal that makes them resolvable.
+First we define a function that, given two clauses, returns the result
+   of resolving them, or if no resolution is possible, returns 
+   \texttt{None} (Python's default return value).
 
 \begin{code}
-def resolve_resolvable(clauses):
-    for c1 in clauses:
-        for lit in c1:
-            if atom(lit):
-                for c2 in clauses:
-                    if c2 is c1:
-                        continue
-                    if ('not', lit) in c2:
-                        return (lit, c1, c2)
+
+def resolve_rule(c1, c2):
+    for f in c1:
+        if f[0] == 'not':
+            f_not = f[1]
+        else:
+            f_not = ('not', f)
+        if f_not in c2:
+            c1_new = [g for g in c1 if not g == f]
+            c2_new = [g for g in c2 if not g == f_not] 
+            return c1_new + c2_new
 \end{code}
-If no resolvable clauses are found, the function will return \texttt{None}
-   (Python's default return value).
+
+It is also useful to have a couple of utility funtions for keeping our
+   clauses standardized.
+In particular, we don't want to keep any tautologious clauses (those
+   a literal and its negation), and we don't want any literal
+   appearing more than once in a clause
+
+\begin{code}
+
+def clean_clause(clause):
+
+    if not clause:
+        return clause
+
+    clean = []
+    for f in clause:
+        if ('not', f) in clause:
+            return None
+        if not f in clean:
+            clean.append(f)
+
+    return clean
+
+
+def clean_clauses(clauses):
+    clean_clauses = []
+    for clause in clauses:
+        clean = clean_clause(clause)
+        if clean:
+            clean_clauses.append(clean)
+    return clean_clauses
+
+\end{code}
 
 Now we are ready to define the resolution algorithm:
 
 \begin{code}
-def resolve_do(clauses):
 
-    res = resolve_resolvable(clauses)
-    if not res:
-        # No resolvable clauses were found.
-        return False
-    lit, c1, c2 = res
+def resolve_cnf_do(clauses):
 
-    # Apply the resolution rule.
-    clauses.remove(c1)
-    c1.remove(lit)
-    clauses.remove(c2)
-    c2.remove(('not',lit))
-    clauses.append(c1 + c2)
+    from itertools import combinations
 
     if [] in clauses:
-        # The list of clauses is unsatisfiable.
+        # We have found an empty clause. 
         return True
 
-    return resolve_do(clauses)
+    for c1, c2 in combinations(clauses, 2):
+        new = clean_clause(resolve_rule(c1, c2))
+        if new == None or new in clauses:
+            continue
+        else:
+            clauses.append(new)
+            return resolve_cnf_do(clauses)
+    
+    # There are no new resolutions.
+    return False
 \end{code}
+
+The \texttt{combinations} allows us to iterate over all the pairs of 
+   clauses.
+If some pair of clauses resolves to a new clause we have not already
+   seen, it is added to the list.
+Notice that the resolvants (\texttt{c1} and \texttt{c2}) are not removed
+   from the list of clauses when they are used.
+This is because clauses must sometimes be re-used consider the following
+   proof of $(\lnot p\rightarrow q)\rightarrow ((p\rightarrow q)\rightarrow
+   q)$:
+\begin{align*}
+1.\ & \lnot((\lnot p\rightarrow q)\rightarrow ((p\rightarrow q)\rightarrow q))
+   \tag{negated for resolution proof}\\
+2.\ & [p, q] \tag{clausal cnf}\\
+3.\ & [\lnot p, q] \tag{clausal cnf}\\
+4.\ & [\lnot q]  \tag{clausal cnf}\\
+5.\ & [p] \tag{resolution rule on 2, 4}\\
+6.\ & [\lnot p] \tag{resolution rule on 3, 4}\\
+7.\ & [\ ] \tag{resolution rule on 5, 6}
+\end{align*}
+
+As you can see, if $4$ were removed from the list of clauses after being
+   used toget $5$, it would not be possible to reach the empty clause.
+
+The efficency of the resolution algorithm diminishes with the length
+   of the proof: 
+Since the resolvants are not removed, the list of clauses grows with
+   each resolution, and it becomes costly to search the pairs.
+The algorithm given here is complete, but resolution algorithms for
+   predicate logic (which can not be complete anyway)
+   use more huristics when searching for resolvants.
 
 \subsection{Semantic Tableaux}
 
@@ -991,7 +1054,7 @@ def tableau_expand(f, qdepth):
     return tableau_expand_do([branch], qdepth, [], 0, 0)
 \end{code}
 
-The real work is done by \textt{tableau\_expand\_do()}. This function takes the
+The real work is done by \texttt{tableau\_expand\_do()}. This function takes the
 full tableau as a list of branches, the `gdepth', a counter for the Skolem
 functions and a counter for the free variables. These two counters are used to
 ensure newly introduced Skolem functions and free variables are unique.
