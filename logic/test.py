@@ -325,7 +325,7 @@ def test_prop_tableaux():
         (prop.parse("~~(~(pVq)V(pVq))"), True),
         (prop.parse("((((a->b)->(~c->~d))->c)->e)->((e->a)->(d->a))"), True)
     ]
-    provers = [prop.tableau, prop.tableau_dnf]
+    provers = [prop.tableau, prop.tableau_dnf, prop.resolve_cnf, prop.resolve]
 
     test_provers(provers, prop.fml_to_str, tests)
 
@@ -822,4 +822,4 @@ def schubert_steamroller():
 
 util.debug = 0
 
-test_pred_tableaux_2()
+test_prop_tableaux()

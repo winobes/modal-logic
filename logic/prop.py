@@ -434,114 +434,135 @@ def strngst_impcl(sigma):
 # Resolution
 #
 
-def resolve(f):
-    asgmt = {atom_name: None for atom_name in get_atom_names(f)}
-    clauses = fml_to_clauses(f)
-    return resolve_do(clauses, asgmt)
-
-def resolve_do(clauses, asgmt):
-    while True:
-        new_clauses = resolve_simplify(clauses, asgmt)
-        if any(clause == [] for clause in new_clauses):
-            return False 
-        if new_clauses == []:
-            return True
-        if not resolve_consistent_unit_clauses(clauses):
-            return False 
-        new_asgmt = resolve_assign_unit_clauses(clauses, asgmt)
-        if new_clauses == clauses and new_asgmt == asgmt:
-            break   
-        else:
-            clauses = new_clauses
-            asgmt = new_asgmt
-    lit = clauses[0][0]
-    if atom(lit):
-        atom_name = lit[0]
-    else:
-        atom_name = lit[1][0]
-    atom_false = asgmt.copy()
-    atom_false.update({atom_name: False})
-    atom_true = asgmt.copy()
-    atom_true.update({atom_name: True})
-    return (resolve_do(clauses, atom_false)
-        or resolve_do(clauses, atom_true))
-
-def fml_to_clauses(f):
-    if atom(f) or f[0] == 'not':
+def cnf_to_clauses(f):
+    if literal(f):
         return [[f]]
-    if f[0] == 'or': 
+    if f[0] == 'or':
         return [f[1]]
     if f[0] == 'and':
-        return [fml_to_clauses(x)[0] for x in f[1]]
+        return [[g] if literal(g) else g[1] for g in f[1]]
 
-def resolve_assign_unit_clauses(clauses, asgmt):
-    new_asgmt = asgmt.copy() 
-    for clause in clauses:
-        if len(clause) == 1:
-            if atom(clause[0]):
-                new_asgmt[clause[0][0]] = True
-            else:
-                new_asgmt[clause[0][1][0]] = False
-    return new_asgmt
+def resolve_cnf(f):
+    return resolve_do(resolve_clean_clauses(cnf_to_clauses(cnf(('not', f)))))
 
-def resolve_consistent_unit_clauses(clauses):
-    return not any([len(c) == 1 and [('not', c[0])] in clauses for c in clauses])
 
-def resolve_simplify(clauses, asgmt):
-    for clause in clauses[:]:
-        if any(resolve_eval_lit(lit, asgmt) for lit in clause):
-            clauses.remove(clause) 
-            continue
-        for lit in clause[:]:
-            if resolve_eval_lit(lit, asgmt) == False:
-                clause.remove(lit)    
-    return clauses
-
-def resolve_eval_lit(lit, asgmt):
-    if atom(lit):
-        if not lit[0] in asgmt:
-            raise ValueError ("literal not in assignment")
-        else:
-            return asgmt[lit[0]]
-    if lit[0] == 'not':
-        value = resolve_eval_lit(lit[1], asgmt)
-        if value == None:
-            return None 
-        else:
-            return not value
-    else:
-        raise ValueError ("not a literal:", lit)
-
-def resolve2(f):
-    return resolve2_do(fml_to_clauses(cnf(('not', f))))
-
-def resolve2_do(clauses):
-
-    res = resolve2_resolvable(clauses)
-    if not res:
-        return False
-    lit, c1, c2 = res
-
-    clauses.remove(c1)
-    c1.remove(lit)
-    clauses.remove(c2)
-    c2.remove(('not',lit))
-    clauses.append(c1 + c2)
+def resolve_cnf_do(clauses):
+    from itertools import combinations
 
     if [] in clauses:
         return True
 
-    return resolve2_do(clauses)
+    for c1, c2 in combinations(clauses, 2):
+        new = resolve_clean_clause(resolve_rule(c1, c2))
+        if new == None or new in clauses:
+            continue
+        else:
+            clauses.append(new)
+            return resolve_cnf_do(clauses)
 
-def resolve2_resolvable(clauses):
-    for c1 in clauses:
-        for lit in c1:
-            if atom(lit):
-                for c2 in clauses:
-                    if c2 is c1:
-                        continue
-                    if ('not', lit) in c2:
-                        return (lit, c1, c2)
+    return False
+
+def resolve_clean_clause(clause):
+
+    if not clause:
+        return clause
+
+    clean = []
+    for f in clause:
+        if not f in clean:
+            clean.append(f)
+
+    for f in clean:
+        if ('not', f) in clean:
+            return None
+    return clean
+
+def resolve_clean_clauses(clauses):
+    clean_clauses = []
+    for clause in clauses:
+        clean = resolve_clean_clause(clause)
+        if clean:
+            clean_clauses.append(clean)
+    return clean_clauses
+
+    
+
+def resolve_rule(c1, c2):
+    for f in c1:
+        if f[0] == 'not':
+            f_not = f[1]
+        else:
+            f_not = ('not', f)
+        if f_not in c2:
+            c1_new = [g for g in c1 if not g == f]
+            c2_new = [g for g in c2 if not g == f_not] 
+            return c1_new + c2_new
+
+def resolve(f):
+    return resolve_do([[('not', f)]])
+
+def resolve_do(clauses):
+    from itertools import combinations
+
+    if [] in clauses:
+        print('Tautology')
+        return True
+
+    for c1, c2 in combinations(clauses, 2):
+        new = resolve_clean_clause(resolve_rule(c1, c2))
+        if new == None or new in clauses:
+            continue
+        else:
+            clauses.append(new)
+            return resolve_do(clauses)
+
+    for clause in clauses:
+        print(clause)
+    print()
+    for clause in clauses:
+
+        # Handle double negations and beta formulas.
+        for f in clause:
+
+            betas  = None
+            alphas = None
+            if f[0] == 'or':
+                betas =  f[1]
+            if f[0] == 'arrow':
+                betas =  [('not', f[1]), f[2]]
+            if f[0] == 'and':
+                alphas = f[1]
+            if f[0] == 'not': 
+                if f[1][0] == 'not':
+                    betas =  [f[1][1]]
+                if f[1][0] == 'and':
+                    betas =  [('not', g) for g in f[1][1]]
+                if f[1][0] == 'or':
+                    alphas = [('not', g) for g in f[1][1]]
+                if f[1][0] == 'arrow':
+                    alphas = [f[1][1], ('not', f[1][2])]
+            
+            # Handle double negations and beta formulas.
+            if betas: 
+                clauses.remove(clause)
+                clause.remove(f)
+                clauses.append(clause + betas)
+                clauses = resolve_clean_clauses(clauses)
+                return resolve_do(clauses)
+        
+            # Handle alpha formulas
+            if alphas: 
+                clauses.remove(clause)
+                clause.remove(f)
+                for g in alphas:
+                    clauses.append(clause + [g])
+                clauses = resolve_clean_clauses(clauses)
+                return resolve_do(clauses)
+
+    print('Not Tautology')
+    return False
+
+    
 
 #
 # Tableaux
