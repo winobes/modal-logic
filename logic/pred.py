@@ -332,10 +332,9 @@ def subst_termlist(subst, termlist):
 # Apply a substitution to a term.
 def subst_term(subst, term):
     if variable(term):
-        return subst[term] if term in subst else term
+        return subst_term(subst, subst[term]) if term in subst else term
     else:
         return (term[0], subst_termlist(subst, term[1]))
-
 
 #
 # Unification
