@@ -5,6 +5,7 @@
 \usepackage{minted}
 \usepackage[margin=2cm]{geometry}
 \usepackage[final]{pdfpages}
+\usepackage{csvsimple}
 
 \newminted[code]{python}{frame=single}
 
@@ -486,6 +487,8 @@ syntactic algorithm minus that of the semantic one) when converting 5000 random
 formulas to CNF.
 The columns represent the number of unique atoms in a formula while the rows
 represent the total number of atoms occurring in that formula.
+
+%\csvautotabular{report.csv}
 
 \begin{figure}[!ht]
 \caption{Semantic vs. syntactic CNF time differential}
@@ -1341,14 +1344,14 @@ branch 1:
    ~R(f0, f0)
    AxEyR(x, y)
    R(x0, f1(x0))
-   ~R(x1, x2)
+   ~R(x2, x1)
 
 branch 2:
    Azxy((R(x, y) & R(y, z)) -> R(x, z))
    ~R(f0, f0)
    AxEyR(x, y)
    R(x0, f1(x0))
-   R(x2, x1)
+   R(x1, x2)
 \end{verbatim}
 
 After being fully expanded there are six branches:
@@ -1358,16 +1361,33 @@ After being fully expanded there are six branches:
 branch 1:
    ~R(f0, f0)
    R(x0, f1(x0))
-   ~R(x1, x2)
-   R(x4, x3)
+   ~R(x2, x1)
+   R(x5, x3)
    R(x9, f2(x9))
-   
+
+branch 4:
+   ~R(f0, f0)
+   R(x0, f1(x0))
+   ~R(x2, x1)
+   ~R(x4, x3)
+   R(x12, f5(x12))
+\end{verbatim}
+\end{minipage}
+\begin{minipage}[t]{.3\textwidth}
+\begin{verbatim}
 branch 2:
    ~R(f0, f0)
    R(x0, f1(x0))
-   R(x2, x1)
-   R(x7, x6)
+   R(x1, x2)
+   R(x8, x6)
    R(x10, f3(x10))
+
+branch 5:
+   ~R(f0, f0)
+   R(x0, f1(x0))
+   R(x1, x2)
+   ~R(x8, x7)
+   R(x13, f6(x13))
 \end{verbatim}
 \end{minipage}
 \begin{minipage}[t]{.3\textwidth}
@@ -1375,33 +1395,17 @@ branch 2:
 branch 3:
    ~R(f0, f0)
    R(x0, f1(x0))
-   ~R(x1, x2)
-   ~R(x4, x5)
+   ~R(x2, x1)
+   ~R(x5, x4)
    R(x11, f4(x11))
-
-branch 4:
-   ~R(f0, f0)
-   R(x0, f1(x0))
-   ~R(x1, x2)
-   ~R(x5, x3)
-   R(x12, f5(x12))
-\end{verbatim}
-\end{minipage}
-\begin{minipage}[t]{.3\textwidth}
-\begin{verbatim}
-branch 5:
-   ~R(f0, f0)
-   R(x0, f1(x0))
-   R(x2, x1)
-   ~R(x7, x8)
-   R(x13, f6(x13))
 
 branch 6:
    ~R(f0, f0)
    R(x0, f1(x0))
-   R(x2, x1)
-   ~R(x8, x6)
+   R(x1, x2)
+   ~R(x7, x6)
    R(x14, f7(x14))
+
 \end{verbatim}
 
 \end{minipage}
@@ -1412,63 +1416,73 @@ Recall that the goal is to find an assignment of the free variables
    into terms such that each branch contains a literal and its dual.
 The closure algorithm iterates through each branch, finding unifications
    which will close it.
-The unification map is cumulatively added to as each branch is closed.
-Below are the substitutions added at each branch and the result of
-   applying those substiutions.
-Closure pairs on each branch are marked with a \texttt{*}.
+The unification map is cumulatively composed as each branch is closed.
+Below are the substitutions added at each branch that close each branch
+   and the cumulative substitution that results.
+
+\begin{verbatim}
+Branch 1:
+New substitutions: {x0 -> x2, x1 -> f1(x2)}
+Cumulative:        {x0 -> x2, x1 -> f1(x2)}
+
+Branch 2:
+New substitutions: {x8 -> f0, x6 -> f0}
+Cumulative:        {x8 -> f0, x1 -> f1(x2), x6 -> f0, x0 -> x2}
+
+Branch 3:
+New substitutions: None
+Cumulative:        {x8 -> f0, x1 -> f1(x2), x6 -> f0, x0 -> x2}
+
+Branch 4:
+New substitutions: None
+Cumulative:        {x8 -> f0, x1 -> f1(x2), x6 -> f0, x0 -> x2}
+
+Branch 5:
+New substitutions: {x2 -> f0, x7 -> f1(f0)}
+Cumulative:        {x8 -> f0, x2 -> f0, x0 -> f0, x1 -> f1(f0), x6 -> f0, x7 -> f1(f0)}
+
+Branch 6:
+New substitutions: None
+Cumulative:        {x8 -> f0, x2 -> f0, x0 -> f0, x1 -> f1(f0), x6 -> f0, x7 -> f1(f0)}
+
+\end{verbatim}
+
+Below are the results of applying cumulative substitutions to each
+   branch (up the the substitution added to close it).
+Closure pairs are marked with a \texttt{*}.
+
+Notice that as we go there are fewer and fewer variables left to assign.
+Here we are able to close the tableau by the end, but even tautological
+   formluas may result in a tableau tha can not be closed if the gdepth
+   provided to \texttt{tableau\_expand} is insufficient.
 
 \begin{minipage}[t]{.3\textwidth}
 \begin{verbatim}
-
-x0 -> x1
-x2 -> f1(x1)
 
 branch 1:
    ~R(f0, f0)
- * R(x1, f1(x1))
- * ~R(x1, f1(x1))
-   R(x4, x3)
+ * R(x2, f1(x0))
+ * ~R(x2, f1(x2))
+   R(x5, x3)
    R(x9, f2(x9))
-
-x7 -> f0
-x6 -> f0
-
-branch 2:
- * ~R(f0, f0)
-   R(x1, f1(x1))
-   R(f1(x1), x1)
- * R(f0, f0)
-   R(x10, f3(x10))
-\end{verbatim}
-\end{minipage}
-\begin{minipage}[t]{.3\textwidth}
-\begin{verbatim}
-
-
-(no new substs) 
-
-branch 3:
-   ~R(f0, f0)
- * R(x1, f1(x1))
- * ~R(x1, f1(x1))
-   ~R(x4, x5)
-   R(x11, f4(x11))
-
-(no new substs)
 
 branch 4:
    ~R(f0, f0)
- * R(x1, f1(x1))
- * ~R(x1, f1(x1))
-   ~R(x5, x3)
+ * R(x2, f1(x2))
+ * ~R(x2, f1(x2))
+   ~R(x4, x3)
    R(x12, f5(x12))
 \end{verbatim}
 \end{minipage}
 \begin{minipage}[t]{.3\textwidth}
 \begin{verbatim}
 
-x1 -> f0
-x8 -> f1(f0)
+branch 2:
+ * ~R(f0, f0)
+   R(x2, f1(x0))
+   R(f1(x2), x2)
+ * R(f0, f0)
+   R(x10, f3(x10))
 
 branch 5:
    ~R(f0, f0)
@@ -1476,8 +1490,17 @@ branch 5:
    R(f1(f0), f0)
  * ~R(f0, f1(f0))
    R(x13, f6(x13))
+\end{verbatim}
+\end{minipage}
+\begin{minipage}[t]{.3\textwidth}
+\begin{verbatim}
 
-x1 -> f0
+branch 3:
+   ~R(f0, f0)
+ * R(x2, f1(x2))
+ * ~R(x2, f1(x2))
+   ~R(x5, x4)
+   R(x11, f4(x11))
 
 branch 6:
    ~R(f0, f0)
@@ -1485,8 +1508,14 @@ branch 6:
  * R(f1(f0), f0)
  * ~R(f1(f0), f0)
    R(x14, f7(x14))
+
 \end{verbatim}
 
 \end{minipage}
-\
+\hfill\  \\
+Since each branch is closed, we may conclude that the expanded tableau
+   is unsatisfiable, thus the formula provided to \texttt{tableau} is
+   a tautology.
+
+
 \end{document}
