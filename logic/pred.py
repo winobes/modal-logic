@@ -460,6 +460,57 @@ def tableau_expand_do(branches, gdepth, skolem_func_counter, uni_var_counter):
 
     return branches
 
+def tableau_expand_do2(tree, gdepth, skolem_func_counter, uni_var_counter):
+    print(tree)
+
+    if tree == []:
+        return tree
+
+    #branch = tree[0]
+    #tree = tree[1:]
+
+    # Handle alpha formulas.
+    for f in tree[0]:
+        if f[0] == 'and':
+            tree[0].remove(f)
+            tree[0].extend([tableau_canonize(g) for g in f[1]])
+            return tableau_expand_do2(tree, gdepth, skolem_func_counter, uni_var_counter)
+
+    # Handle beta formulas.
+    for f in tree[0]:
+        if f[0] == 'or':
+            branch = tree[0]
+            tree.remove(branch)
+            branch.remove(f)
+            for sub in [tableau_canonize(g) for g in f[1]]:
+                tree.insert(0, branch + [sub])
+            return tableau_expand_do2(tree, gdepth, skolem_func_counter, uni_var_counter)
+
+    # Handle delta formulas.
+    for f in tree[0]:
+        if f[0] == 'exists':
+            g, skolem_func_counter = tableau_skolemize(f[2], f[1], skolem_func_counter)
+            tree[0].remove(f)
+            tree[0].append(tableau_canonize(g))
+            return tableau_expand_do2(tree, gdepth, skolem_func_counter, uni_var_counter)
+
+    # Handle gamma formulas.
+    for f in tree[0]:
+        if f[0] == 'all':
+            tree[0].remove(f)
+            if gdepth > 0:
+                tree[0].append(f)
+                gdepth -= 1
+            new_f = f[2]
+            for var in f[1]:
+                parameter =  'x' + str(uni_var_counter)
+                uni_var_counter += 1
+                new_f = subst_formula({var:parameter}, new_f)
+            tree[0].append(tableau_canonize(new_f))
+            return tableau_expand_do(tree, gdepth, skolem_func_counter, uni_var_counter)
+
+    return tableau_expand_do2(tree[1:], gdepth, skolem_func_counter, uni_var_counter) + [tree[0]]
+
 # Rewrites formulas in canonical form:
 # Alpha formulas have 'and'    as the main operator.
 # Beta  formulas have 'or'     as the main operator.
