@@ -436,14 +436,15 @@ def strngst_impcl(sigma):
 
 def cnf_to_clauses(f):
     if literal(f):
-        return [[f]]
+        clauses = [[f]]
     if f[0] == 'or':
-        return [f[1]]
+        clauses = [f[1]]
     if f[0] == 'and':
-        return [[g] if literal(g) else g[1] for g in f[1]]
+        clauses = [[g] if literal(g) else g[1] for g in f[1]]
+    return clean_clauses(clauses)
 
 def resolve_cnf(f):
-    return resolve_do(resolve_clean_clauses(cnf_to_clauses(cnf(('not', f)))))
+    return resolve_cnf_do(cnf_to_clauses(cnf(('not', f))))
 
 
 def resolve_cnf_do(clauses):
@@ -453,7 +454,7 @@ def resolve_cnf_do(clauses):
         return True
 
     for c1, c2 in combinations(clauses, 2):
-        new = resolve_clean_clause(resolve_rule(c1, c2))
+        new = clean_clause(resolve_rule(c1, c2))
         if new == None or new in clauses:
             continue
         else:
@@ -462,30 +463,27 @@ def resolve_cnf_do(clauses):
 
     return False
 
-def resolve_clean_clause(clause):
+def clean_clause(clause):
 
     if not clause:
         return clause
 
     clean = []
     for f in clause:
+        if ('not', f) in clause:
+            return None
         if not f in clean:
             clean.append(f)
 
-    for f in clean:
-        if ('not', f) in clean:
-            return None
     return clean
 
-def resolve_clean_clauses(clauses):
+def clean_clauses(clauses):
     clean_clauses = []
     for clause in clauses:
-        clean = resolve_clean_clause(clause)
+        clean = clean_clause(clause)
         if clean:
             clean_clauses.append(clean)
     return clean_clauses
-
-    
 
 def resolve_rule(c1, c2):
     for f in c1:
@@ -505,20 +503,16 @@ def resolve_do(clauses):
     from itertools import combinations
 
     if [] in clauses:
-        print('Tautology')
         return True
 
     for c1, c2 in combinations(clauses, 2):
-        new = resolve_clean_clause(resolve_rule(c1, c2))
+        new = clean_clause(resolve_rule(c1, c2))
         if new == None or new in clauses:
             continue
         else:
             clauses.append(new)
             return resolve_do(clauses)
 
-    for clause in clauses:
-        print(clause)
-    print()
     for clause in clauses:
 
         # Handle double negations and beta formulas.
@@ -547,7 +541,7 @@ def resolve_do(clauses):
                 clauses.remove(clause)
                 clause.remove(f)
                 clauses.append(clause + betas)
-                clauses = resolve_clean_clauses(clauses)
+                clauses = clean_clauses(clauses)
                 return resolve_do(clauses)
         
             # Handle alpha formulas
@@ -556,10 +550,9 @@ def resolve_do(clauses):
                 clause.remove(f)
                 for g in alphas:
                     clauses.append(clause + [g])
-                clauses = resolve_clean_clauses(clauses)
+                clauses = clean_clauses(clauses)
                 return resolve_do(clauses)
 
-    print('Not Tautology')
     return False
 
     
