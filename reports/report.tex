@@ -84,7 +84,7 @@ semantic approach relying on truth tables.
 
 \subsubsection{The Syntactic Algorithm}
 
-The syntactic CNF algorithm exploits the distributivity of disjunction over
+The syntactic CNF algorithm exploits the distributively of disjunction over
 conjunction to transform formulas into CNF.
 For example, the non-CNF formula $\phi \lor (\psi \land \chi)$ may be
 transformed into the logically equivalent CNF formula $(\phi \lor \psi) \land
@@ -612,9 +612,9 @@ def resolve_rule(c1, c2):
             return c1_new + c2_new
 \end{code}
 
-It is also useful to have a couple of utility funtions for keeping our
+It is also useful to have a couple of utility functions for keeping our
    clauses standardized.
-In particular, we don't want to keep any tautologious clauses (those
+In particular, we don't want to keep any tautologous clauses (those
    a literal and its negation), and we don't want any literal
    appearing more than once in a clause
 
@@ -692,13 +692,13 @@ This is because clauses must sometimes be re-used consider the following
 As you can see, if $4$ were removed from the list of clauses after being
    used toget $5$, it would not be possible to reach the empty clause.
 
-The efficency of the resolution algorithm diminishes with the length
+The efficiency of the resolution algorithm diminishes with the length
    of the proof: 
 Since the resolvants are not removed, the list of clauses grows with
    each resolution, and it becomes costly to search the pairs.
 The algorithm given here is complete, but resolution algorithms for
    predicate logic (which can not be complete anyway)
-   use more huristics when searching for resolvants.
+   use more heuristics when searching for resolvants.
 
 \subsection{Semantic Tableaux}
 
@@ -713,7 +713,7 @@ algorithm. Because of this symmetry, we omit the DNF implementation here.
 To prove a formula $\phi$, the semantic tableaux procedure begins by taking
 $\lnot\phi$ and then repeatedly applying so-called expansion rules to it. These
 expansion rules expand $\lnot\phi$ into a tableau or tree with the following
-properties. Each node is labelled by a subformula of $\lnot\phi$. Each branch
+properties. Each node is labeled by a subformula of $\lnot\phi$. Each branch
 represents the conjunction of its nodes, while the tree itself represents the
 disjunction of its branches. If the expansion is completed, the tree represents
 a DNF formula equivalent to $\lnot\phi$.
@@ -852,7 +852,7 @@ If \texttt{s} is a $n$-ary function symbol, and \texttt{[t$_1,\ldots,$t$_n$]}
    is a list of terms, then \texttt{(s,[t$_1,\ldots,$t$_n$])} is a term.
 \end{enumerate}
 
-The functions for determining if a term is a variable, a contstant, or a
+The functions for determining if a term is a variable, a constant, or a
    function are defined as follows:
 \begin{code}
 def variable(x):
@@ -901,8 +901,8 @@ Two useful functions (with straightforward inductive implementations) are
 \begin{code}
 def get_free_vars(f, bound_vars):
 \end{code}
-returning a set containing of all the free variabes in \texttt{f} (excluding those
-   found in the \texttt{bound\_vars} paramater) and
+returning a set containing of all the free variables in \texttt{f} (excluding those
+   found in the \texttt{bound\_vars} parameter) and
 \begin{code}
 def get_funcs(f):
 \end{code}
@@ -1006,7 +1006,7 @@ def variables_in_term(term):
 In this section we write $\phi(x_1,...,x_n)$ to emphasize that $\phi$ is
    a formula with free variables $x_1,...,x_n$.
 
-A formula with free vairables is satisfiable if every sentence resulting
+A formula with free variables is satisfiable if every sentence resulting
    from an assignment of those free variables is satisfiable.
 Thus $\phi(x_1,...,x_n)$ is satisfiable if and only if $\forall x_1,...,
    x_n\phi(x_1,...x_n)$ is satisfiable.
@@ -1020,7 +1020,7 @@ In other words, $\phi$ defines a function from $x$ to $y$ in the model's
    domain.
 But if that is true, then there is an extension of that model where
    that function is given an explicit interpretation.
-Skolemization is the process of intruducing a new function in the formula
+Skolemization is the process of introducing a new function in the formula
    that stands for that formula.
 Thus $\exists y\phi(x, y)$ is satisfiable if and only
    if $\phi(x, f(x))$ is satisfiable for some function $f$ not appearing
@@ -1086,7 +1086,7 @@ unifications needed to close other branches.
 
 In some tableau proofs, it necessary to unify a variable not only with one
 other term, but with two or more. For this reason, it may be necessary to apply
-the gamma rule to a formule more than once. Unfortunately, given the
+the gamma rule to a formula more than once. Unfortunately, given the
 undecidability of first-order logic, often it is not known in advance how often
 the gamma rule should be applied. An implementation of a first-order tableaux
 proof procedure therefore needs to limit the number of gamma rule applications.
@@ -1097,7 +1097,7 @@ We use the \texttt{tableau\_canonize()} function to transform formulas into a
 canonical type. That is, alpha formulas are transformed into formulas with
 $\land$ as their main operator, gamma formulas are transformed such that
 $\forall$ is their main operator and so forth. To determine the type of a
-formula, this allows us simply to determine its main oeprator. The
+formula, this allows us simply to determine its main operator. The
 implementation of the function is as follows.
 
 \begin{code}
@@ -1250,7 +1250,7 @@ def tableau_branch_closed(branch, substs):
 
 To demonstrate the predicate tableaux algorithm we shall walk through the
    proof that relations which are serial, symmetric, and transitive are
-   necessairly reflexive.
+   necessarily reflexive.
 
 Let $R$ be a first-order binary relation. 
 We will use the following abbreviations:
@@ -1262,7 +1262,7 @@ We will use the following abbreviations:
 \end{align*}
 
 Informally, it is easy to see why this must be the case.
-Suppose we have model where $R$ is serial, semetric, and transitive.
+Suppose we have model where $R$ is serial, symmetric, and transitive.
 We assume non-empty domain, so let $a$ be given.
 By seriality, there is an element $b$ such that $Rab$.
 By symmetry, we have $Rba$ as well.
@@ -1271,14 +1271,14 @@ Thus $Rxx$ must hold for all $x$; $R$ is reflexive.
 
 The tableaux proof is quite a bit longer, but the shadow of this same 
    reasoning is present in it.
-The algorithm can do this proof whith a single instantiation of each 
+The algorithm can do this proof with a single instantiation of each 
    universal statement, so \texttt{gdepth} is set to $1$.
 To start with we give the algorithm the following formula:
 \[
 \textsf{serial}\land\textsf{symmetric}\land\textsf{transitive}
    \rightarrow\textsf{reflexive}
 \]
-Which is converted to a tableau contaning a single branch with that 
+Which is converted to a tableau containing a single branch with that 
    formula's negation:
 \[
 [[\lnot(\textsf{serial}\land\textsf{symmetric}\land\textsf{transitive}
