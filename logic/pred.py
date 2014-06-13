@@ -322,7 +322,7 @@ def subst_termlist(subst, termlist):
 # Apply a substitution to a term.
 def subst_term(subst, term):
     if variable(term):
-        return subst_term(subst, subst[term]) if term in subst else term
+        return subst[term] if term in subst else term
     else:
         return (term[0], subst_termlist(subst, term[1]))
 
@@ -530,7 +530,7 @@ def tableau_closed(branches):
         util.dprint('new substitutions:', subst_to_str(newsubsts))
         if newsubsts == None:
             return False
-        substs.update(newsubsts)
+        substs = compose_subst(newsubsts, substs)
     util.dprint('tableau closed with', subst_to_str(substs))
     return True
 
