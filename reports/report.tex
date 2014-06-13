@@ -1143,4 +1143,250 @@ def tableau_branch_closed(branch, substs):
     return None
 \end{code}
 
+\subsubsection{Example Proof}
+
+To demonstrate the predicate tableaux algorithm we shall walk through the
+   proof that relations which are serial, symmetric, and transitive are
+   necessairly reflexive.
+
+Let $R$ be a first-order binary relation. 
+We will use the following abbreviations:
+\begin{align*}
+\textsf{serial}& \iff \forall x\exists yRxy\\
+\textsf{symmetric}& \iff \forall xy(Rxy\rightarrow Ryx)\\
+\textsf{transtive}& \iff \forall xyz((Rxy\land Ryz)\rightarrow Rxz)\\
+\textsf{reflexive}& \iff \forall x Rxx
+\end{align*}
+
+Informally, it is easy to see why this must be the case.
+Suppose we have model where $R$ is serial, semetric, and transitive.
+We assume non-empty domain, so let $a$ be given.
+By seriality, there is an element $b$ such that $Rab$.
+By symmetry, we have $Rba$ as well.
+From transitivity, and $Rab$ and $Rba$, we have $Raa$.
+Thus $Rxx$ must hold for all $x$; $R$ is reflexive.
+
+The tableaux proof is quite a bit longer, but the shadow of this same 
+   reasoning is present in it.
+The algorithm can do this proof whith a single instantiation of each 
+   universal statement, so \texttt{gdepth} is set to $1$.
+To start with we give the algorithm the following formula:
+\[
+\textsf{serial}\land\textsf{symmetric}\land\textsf{transitive}
+   \rightarrow\textsf{reflexive}
+\]
+Which is converted to a tableau contaning a single branch with that 
+   formula's negation:
+\[
+[[\lnot(\textsf{serial}\land\textsf{symmetric}\land\textsf{transitive}
+   \rightarrow\textsf{reflexive})]]
+\]
+
+From here we give the debug messages from \texttt{tableau\_expand\_do}.
+
+After applying the alpha rule twice we have:
+\begin{verbatim}
+branch 1:
+   Ex~R(x, x)
+   AxEyR(x, y)
+   Axy(R(x, y) -> R(y, x))
+   Azxy((R(x, y) & R(y, z)) -> R(x, z))
+\end{verbatim}
+
+The   delta rule (Skolemization) is applied to \texttt{Ex~R(x, x)}:
+\begin{verbatim}
+branch 1:
+   AxEyR(x, y)
+   Axy(R(x, y) -> R(y, x))
+   Azxy((R(x, y) & R(y, z)) -> R(x, z))
+   ~R(f0, f0)
+\end{verbatim}
+
+The delta rule is applied to \texttt{EyR(x0, y)}:
+\begin{verbatim}
+branch 1:
+   Axy(R(x, y) -> R(y, x))
+   Azxy((R(x, y) & R(y, z)) -> R(x, z))
+   ~R(f0, f0)
+   AxEyR(x, y)
+   EyR(x0, y)
+\end{verbatim}
+
+The delta rule is applied to the newly-aded \texttt{EyR(x0, y)}:
+
+\begin{verbatim}
+branch 1:
+   Axy(R(x, y) -> R(y, x))
+   Azxy((R(x, y) & R(y, z)) -> R(x, z))
+   ~R(f0, f0)
+   AxEyR(x, y)
+   R(x0, f1(x0))
+\end{verbatim}
+
+The gamma rule is applied to \texttt{Axy(R(x, y) -> R(y, x))}:
+\begin{verbatim}
+branch 1:
+   Azxy((R(x, y) & R(y, z)) -> R(x, z))
+   ~R(f0, f0)
+   AxEyR(x, y)
+   R(x0, f1(x0))
+   ~R(x1, x2) V R(x2, x1)
+\end{verbatim}
+
+The beta rule is applied to \texttt{~R(x1, x2) V R(x2, x1)}.
+
+\begin{verbatim}
+branch 1:
+   Azxy((R(x, y) & R(y, z)) -> R(x, z))
+   ~R(f0, f0)
+   AxEyR(x, y)
+   R(x0, f1(x0))
+   ~R(x1, x2)
+
+branch 2:
+   Azxy((R(x, y) & R(y, z)) -> R(x, z))
+   ~R(f0, f0)
+   AxEyR(x, y)
+   R(x0, f1(x0))
+   R(x2, x1)
+\end{verbatim}
+
+After being fully expanded there are six branches:
+
+\begin{minipage}[t]{.3\textwidth}
+\begin{verbatim}
+branch 1:
+   ~R(f0, f0)
+   R(x0, f1(x0))
+   ~R(x1, x2)
+   R(x4, x3)
+   R(x9, f2(x9))
+   
+branch 2:
+   ~R(f0, f0)
+   R(x0, f1(x0))
+   R(x2, x1)
+   R(x7, x6)
+   R(x10, f3(x10))
+\end{verbatim}
+\end{minipage}
+\begin{minipage}[t]{.3\textwidth}
+\begin{verbatim}
+branch 3:
+   ~R(f0, f0)
+   R(x0, f1(x0))
+   ~R(x1, x2)
+   ~R(x4, x5)
+   R(x11, f4(x11))
+
+branch 4:
+   ~R(f0, f0)
+   R(x0, f1(x0))
+   ~R(x1, x2)
+   ~R(x5, x3)
+   R(x12, f5(x12))
+\end{verbatim}
+\end{minipage}
+\begin{minipage}[t]{.3\textwidth}
+\begin{verbatim}
+branch 5:
+   ~R(f0, f0)
+   R(x0, f1(x0))
+   R(x2, x1)
+   ~R(x7, x8)
+   R(x13, f6(x13))
+
+branch 6:
+   ~R(f0, f0)
+   R(x0, f1(x0))
+   R(x2, x1)
+   ~R(x8, x6)
+   R(x14, f7(x14))
+\end{verbatim}
+
+\end{minipage}
+\hfill\  \\
+
+Now we move to the closure stage.
+Recall that the goal is to find an assignment of the free variables 
+   into terms such that each branch contains a literal and its dual.
+The closure algorithm iterates through each branch, finding unifications
+   which will close it.
+The unification map is cumulatively added to as each branch is closed.
+Below are the substitutions added at each branch and the result of
+   applying those substiutions.
+Closure pairs on each branch are marked with a \texttt{*}.
+
+\begin{minipage}[t]{.3\textwidth}
+\begin{verbatim}
+
+x0 -> x1
+x2 -> f1(x1)
+
+branch 1:
+   ~R(f0, f0)
+ * R(x1, f1(x1))
+ * ~R(x1, f1(x1))
+   R(x4, x3)
+   R(x9, f2(x9))
+
+x7 -> f0
+x6 -> f0
+
+branch 2:
+ * ~R(f0, f0)
+   R(x1, f1(x1))
+   R(f1(x1), x1)
+ * R(f0, f0)
+   R(x10, f3(x10))
+\end{verbatim}
+\end{minipage}
+\begin{minipage}[t]{.3\textwidth}
+\begin{verbatim}
+
+
+(no new substs) 
+
+branch 3:
+   ~R(f0, f0)
+ * R(x1, f1(x1))
+ * ~R(x1, f1(x1))
+   ~R(x4, x5)
+   R(x11, f4(x11))
+
+(no new substs)
+
+branch 4:
+   ~R(f0, f0)
+ * R(x1, f1(x1))
+ * ~R(x1, f1(x1))
+   ~R(x5, x3)
+   R(x12, f5(x12))
+\end{verbatim}
+\end{minipage}
+\begin{minipage}[t]{.3\textwidth}
+\begin{verbatim}
+
+x1 -> f0
+x8 -> f1(f0)
+
+branch 5:
+   ~R(f0, f0)
+ * R(f0, f1(f0))
+   R(f1(f0), f0)
+ * ~R(f0, f1(f0))
+   R(x13, f6(x13))
+
+x1 -> f0
+
+branch 6:
+   ~R(f0, f0)
+   R(f0, f1(f0))
+ * R(f1(f0), f0)
+ * ~R(f1(f0), f0)
+   R(x14, f7(x14))
+\end{verbatim}
+
+\end{minipage}
+\
 \end{document}
