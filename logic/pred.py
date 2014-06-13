@@ -54,16 +54,6 @@ def get_free_vars_in_term(termlist, bound_vars):
                 bound_vars))
     return free_vars
 
-# Return the set of all variables occurring in a term.
-def variables_in_term(term):
-    if variable(term):
-        return {term}
-    else:
-        var = set()
-        for t in term[1]:
-            var |= variables_in_term(t)
-        return var
-
 # Helper function for skolemize(): return a list of all function symbols used
 # in the formula f.
 def get_funcs(f):
@@ -386,6 +376,16 @@ def unify_terms(t1, t2):
             return None
         else:
             return unify_termlists(t1[1], t2[1])
+
+# Return the set of all variables occurring in a term.
+def variables_in_term(term):
+    if variable(term):
+        return {term}
+    else:
+        var = set()
+        for t in term[1]:
+            var |= variables_in_term(t)
+        return var
 
 #
 # Tableaux
