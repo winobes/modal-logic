@@ -448,7 +448,7 @@ def totp_exercises():
     print_theories()
 
     print('transitive, symmetric, serial |- reflexive')
-    print(check_entailment([a['transitive'], a['symmetric'], a['serial']], a['reflexive'], pred.tableau, 2))
+    print(check_entailment([a['transitive'], a['symmetric'], a['serial']], a['reflexive'], pred.tableau, 1))
     print()
 
     print('Strict Partial Order |- asymmetric')
@@ -554,7 +554,7 @@ def test_pred_tableaux_2():
                         ('R', ['y', 'x']))),
                 ('all', {'x'}, ('exists', {'y'}, ('R', ['x', 'y'])))
             ]),
-            ('all', {'x'}, ('R', ['x', 'y']))),
+            ('all', {'x'}, ('R', ['x', 'x']))),
 
         # Exercise 6.1.3 (p. 140)
         ('exists', {'x'},
@@ -666,6 +666,7 @@ def test_pred_tableaux_2():
             ('or', [('all', {'x'}, ('P', ['x'])), ('all', {'x'}, ('Q', ['x']))])
         )
     ]
+
 
     for f in fmls:
         print(pred.fml_to_str(f))
@@ -820,6 +821,18 @@ def schubert_steamroller():
     print()
     print(pred.tableau(fml, 0))
 
+def demonstrate_bug():
+    a = axioms()
+
+    print('transitive, symmetric, serial |- reflexive')
+    for gdepth in range(22):
+        print('Attempting proof with gdepth', gdepth, ':')
+        print(check_entailment([a['transitive'], a['symmetric'], a['serial']], a['reflexive'], pred.tableau, gdepth))
+        print()
+
+
 util.debug = 0
 
-test_prop_tableaux()
+demonstrate_bug()
+
+
