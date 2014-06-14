@@ -1144,12 +1144,12 @@ The beginning of our implementation, then, is as follows.
 
 \begin{code}
 def tableau(f, gdepth):
-    branches = tableau_expand(f, gdepth)
-    return tableau_closed(branches)
+    tree = tableau_expand(f, gdepth)
+    return tableau_closed(tree)
 
-def tableau_expand(f, qdepth):
+def tableau_expand(f, gdepth):
     branch = [tableau_canonize(('not', f))]
-    return tableau_expand_do([branch], qdepth, [], 0, 0)
+    return tableau_expand_do([branch], gdepth, 0, 0)
 \end{code}
 
 The real work is done by \texttt{tableau\_expand\_do()}. This function takes
@@ -1158,60 +1158,59 @@ functions and a counter for the free variables. These two counters are used to
 ensure newly introduced Skolem functions and free variables are unique.
 
 \begin{code}
-def tableau_expand_do(branches, gdepth, gcounter, skolem_func_counter, \
-uni_var_counter):
-    for branch in branches[:]:
-        # Handle alpha formulas.
-        for f in branch:
+def tableau_expand_do(tree, gdepth, skolem_func_counter, uni_var_counter):
+    if tree == []:
+        return tree
 
-            if f[0] == 'and':
-                branch.remove(f)
-                subs = [tableau_canonize(g) for g in f[1]]
-                branch += subs
-                return tableau_expand_do(branches, gdepth, gcounter, \
-		    skolem_func_counter, uni_var_counter)
+    # Handle alpha formulas.
+    for f in tree[0]:
+        if f[0] == 'and':
+            tree[0].remove(f)
+            tree[0].extend([tableau_canonize(g) for g in f[1]])
+            return tableau_expand_do(tree, gdepth, skolem_func_counter, \
+		uni_var_counter)
 
-        # Handle beta formulas.
-        for f in branch:
+    # Handle beta formulas.
+    for f in tree[0]:
+        if f[0] == 'or':
+            branch = tree[0]
+            tree.remove(branch)
+            branch.remove(f)
+            for sub in [tableau_canonize(g) for g in f[1]]:
+                # Inserting is more expensive than appending, but it is helpful
+                # for debugging.
+                tree.insert(0, branch + [sub])
+            return tableau_expand_do(tree, gdepth, skolem_func_counter, \
+		uni_var_counter)
 
-            if f[0] == 'or':
-                branches.remove(branch)
-                branch.remove(f)
-                subs = [tableau_canonize(g) for g in f[1]]
-                for g in subs:
-                    branches.append(branch + [g])
-                return tableau_expand_do(branches, gdepth, gcounter, \
-		    skolem_func_counter, uni_var_counter)
+    # Handle delta formulas.
+    for f in tree[0]:
+        if f[0] == 'exists':
+            g, skolem_func_counter = tableau_skolemize(f[2], f[1], \
+		skolem_func_counter)
+            tree[0].remove(f)
+            tree[0].append(tableau_canonize(g))
+            return tableau_expand_do(tree, gdepth, skolem_func_counter, \
+		uni_var_counter)
 
-        # Handle delta formulas (before gamma formulas).
-        for f in branch:
+    # Handle gamma formulas.
+    for f in tree[0]:
+        if f[0] == 'all':
+            tree[0].remove(f)
+            if gdepth > 0:
+                tree[0].append(f)
+                gdepth -= 1
+            new_f = f[2]
+            for var in f[1]:
+                parameter = 'x' + str(uni_var_counter)
+                uni_var_counter += 1
+                new_f = subst_formula({var:parameter}, new_f)
+            tree[0].append(tableau_canonize(new_f))
+            return tableau_expand_do(tree, gdepth, skolem_func_counter, \
+		uni_var_counter)
 
-            if f[0] == 'exists':
-                branch.remove(f)
-                g, skolem_func_counter = tableau_skolemize(f[2], f[1],
-                    skolem_func_counter)
-                branch.append(tableau_canonize(g))
-                return tableau_expand_do(branches, gdepth, gcounter, \
-		    skolem_func_counter, uni_var_counter)
-
-        # Handle gamma formulas.
-        for f in branch:
-
-            if f[0] == 'all':
-                gcounter.append(f)
-                branch.remove(f)
-                if gcounter.count(f) < gdepth:
-                    branch.append(f)
-                new_f = f[2]
-                for var in f[1]:
-                    parameter =  'x' + str(uni_var_counter)
-                    uni_var_counter += 1
-                    new_f = subst_formula({var:parameter}, new_f)
-                branch.append(tableau_canonize(new_f))
-                return tableau_expand_do(branches, gdepth, gcounter, \
-		    skolem_func_counter, uni_var_counter)
-
-    return branches
+    return tableau_expand_do(tree[1:], gdepth, skolem_func_counter, \
+	uni_var_counter) + [tree[0]]
 \end{code}
 
 This function expands all branches in the tableau by repeated application of
@@ -1222,13 +1221,13 @@ close each of them, taking into account all substitutions from previous branch
 closures.
 
 \begin{code}
-def tableau_closed(branches):
+def tableau_closed(tree):
     substs = {}
-    for branch in branches:
+    for branch in tree:
         newsubsts = tableau_branch_closed(branch, substs)
         if newsubsts == None:
             return False
-        substs.update(newsubsts)
+        substs = compose_subst(newsubsts, substs)
     return True
 
 def tableau_branch_closed(branch, substs):
