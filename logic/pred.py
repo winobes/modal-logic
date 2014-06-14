@@ -504,23 +504,27 @@ def tableau_skolemize(f, exists_vars, func_counter):
     return (g, func_counter + 1)
 
 def tableau_closed(tree):
-    util.dprint('tableau_closed:')
-    for branch in tree:
-        util.dprint('branch:')
-        for f in branch:
-            util.dprint('  ', fml_to_str(f))
-    util.dprint()
+    if util.debug:
+        util.dprint('tableau_closed:')
+        for branch in tree:
+            util.dprint('branch:')
+            for f in branch:
+                util.dprint('  ', fml_to_str(f))
+        util.dprint()
     substs = {}
     for branch in tree:
         newsubsts = tableau_branch_closed(branch, substs)
-        util.dprint('--')
-        util.dprint('current substs: ', subst_to_str(substs))
-        util.dprint('new substs:     ', subst_to_str(newsubsts))
+        if util.debug:
+            util.dprint('--')
+            util.dprint('current substs: ', subst_to_str(substs))
+            util.dprint('new substs:     ', subst_to_str(newsubsts))
         if newsubsts == None:
             return False
         substs = compose_subst(newsubsts, substs)
-        util.dprint('composed substs:', subst_to_str(substs))
-    util.dprint('tableau closed with', subst_to_str(substs))
+        if util.debug:
+            util.dprint('composed substs:', subst_to_str(substs))
+    if util.debug:
+        util.dprint('tableau closed with', subst_to_str(substs))
     return True
 
 def tableau_branch_closed(branch, substs):
