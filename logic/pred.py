@@ -392,8 +392,8 @@ def variables_in_term(term):
 #
 
 def tableau(f, gdepth):
-    branches = tableau_expand(f, gdepth)
-    return tableau_closed(branches)
+    tree = tableau_expand(f, gdepth)
+    return tableau_closed(tree)
 
 def tableau_expand(f, qdepth):
     branch = [tableau_canonize(('not', f))]
@@ -503,15 +503,15 @@ def tableau_skolemize(f, exists_vars, func_counter):
         g = subst_formula({v:(skolem_func, list(free_vars))}, g)
     return (g, func_counter + 1)
 
-def tableau_closed(branches):
+def tableau_closed(tree):
     util.dprint('tableau_closed:')
-    for b in branches:
+    for branch in tree:
         util.dprint('branch:')
-        for f in b:
+        for f in branch:
             util.dprint('  ', fml_to_str(f))
     util.dprint()
     substs = {}
-    for branch in branches:
+    for branch in tree:
         newsubsts = tableau_branch_closed(branch, substs)
         util.dprint('--')
         util.dprint('current substs: ', subst_to_str(substs))
