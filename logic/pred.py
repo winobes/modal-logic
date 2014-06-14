@@ -576,12 +576,14 @@ def tableau_closed(branches):
     util.dprint()
     substs = {}
     for branch in branches:
-        util.dprint('substs so far:', subst_to_str(substs))
         newsubsts = tableau_branch_closed(branch, substs)
-        util.dprint('new substitutions:', subst_to_str(newsubsts))
+        util.dprint('--')
+        util.dprint('current substs: ', subst_to_str(substs))
+        util.dprint('new substs:     ', subst_to_str(newsubsts))
         if newsubsts == None:
             return False
         substs = compose_subst(newsubsts, substs)
+        util.dprint('composed substs:', subst_to_str(substs))
     util.dprint('tableau closed with', subst_to_str(substs))
     return True
 
