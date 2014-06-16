@@ -191,7 +191,7 @@ def test3():
         #print()
 #
 def test4():
-    f = ('exists', {'y'}, ('R', ['y']))
+    f = ('exists', ['y'], ('R', ['y']))
     print(pred.fml_to_str(f))
     g = pred.skolemize(f)
     print(pred.fml_to_str(g))
@@ -201,8 +201,8 @@ def test4():
     
 def test5():
     f = ('or', [
-        ('exists', {'z','y'}, ('not', ('S', ['y', ('c',[]) ]))), 
-        ('exists', {'z'}, ('Q', [(('g',['x','z'])), ('d', []), 'y']))
+        ('exists', ['z','y'], ('not', ('S', ['y', ('c',[]) ]))), 
+        ('exists', ['z'], ('Q', [(('g',['x','z'])), ('d', []), 'y']))
         ])    
     print(pred.fml_to_str(f))
     print(pred.fml_to_str(pred.skolemize(f)))
@@ -374,19 +374,19 @@ def preds_random():
         print()
 
 def axioms():
-    irr = ('all', {'x'}, ('not', ('R', ['x', 'x'])))
-    ref = ('all', {'x'}, ('R', ['x', 'x']))
-    asym = ('all', {'x', 'y'}, ('arrow', ('R', ['x','y']), ('not', ('R', ['y', 'x']))))
-    sym = ('all', {'x', 'y'}, ('arrow', ('R', ['x','y']), ('R', ['y', 'x'])))
-    tr = ('all', {'x', 'y', 'z'}, ('arrow', ('and', [('R', ['x','y']), ('R', ['y', 'z'])]), ('R', ['x','z'])))
-    con = ('all', {'x', 'y'}, ('or', [('R', ['x','y']), ('R', ['y','x'])]))
-    io = ('all', {'x0','x1','x2','x3'}, ('arrow', ('and', [('R', ['x0','x1']), ('R', ['x2','x3'])]), ('or', [('R', ['x0','x3']), ('R', ['x2','x1'])])))
-    ser = ('all', {'x'}, ('exists', {'y'}, ('R', ['x','y']))) 
-    smtr = ('all', {'x0','x1','x2','x3'}, ('arrow', ('and', [('R', ['x0','x1']), ('R', ['x1','x2'])]), ('or', [('R', ['x1', 'x3']), ('R', ['x3', 'x2'])])))
+    irr = ('all', ['x'], ('not', ('R', ['x', 'x'])))
+    ref = ('all', ['x'], ('R', ['x', 'x']))
+    asym = ('all', ['x', 'y'], ('arrow', ('R', ['x','y']), ('not', ('R', ['y', 'x']))))
+    sym = ('all', ['x', 'y'], ('arrow', ('R', ['x','y']), ('R', ['y', 'x'])))
+    tr = ('all', ['x', 'y', 'z'], ('arrow', ('and', [('R', ['x','y']), ('R', ['y', 'z'])]), ('R', ['x','z'])))
+    con = ('all', ['x', 'y'], ('or', [('R', ['x','y']), ('R', ['y','x'])]))
+    io = ('all', ['x0','x1','x2','x3'], ('arrow', ('and', [('R', ['x0','x1']), ('R', ['x2','x3'])]), ('or', [('R', ['x0','x3']), ('R', ['x2','x1'])])))
+    ser = ('all', ['x'], ('exists', ['y'], ('R', ['x','y']))) 
+    smtr = ('all', ['x0','x1','x2','x3'], ('arrow', ('and', [('R', ['x0','x1']), ('R', ['x1','x2'])]), ('or', [('R', ['x1', 'x3']), ('R', ['x3', 'x2'])])))
     # s1 is tautological
     # s2 is the same as irreflexive
-    s3 = ('all', {'x0','x1','x2','x3'}, ('arrow', ('and', [('R', ['x0','x1']), ('not', ('R',['x1','x2'])), ('not', ('R', ['x2','x1'])), ('R', ['x2','x3'])]), ('R', ['x0','x3'])))
-    s4 = ('all', {'x0','x1','x2','x3'}, ('arrow', ('and', [('R', ['x0','x1']), ('R',['x1','x2']), ('not', ('R', ['x1','x3'])), ('not', ('R', ['x3','x1']))]), ('or', [('R', ['x0','x3']), ('R', ['x3','x0']), ('R', ['x2','x3']), ('R', ['x3','x2'])])))
+    s3 = ('all', ['x0','x1','x2','x3'], ('arrow', ('and', [('R', ['x0','x1']), ('not', ('R',['x1','x2'])), ('not', ('R', ['x2','x1'])), ('R', ['x2','x3'])]), ('R', ['x0','x3'])))
+    s4 = ('all', ['x0','x1','x2','x3'], ('arrow', ('and', [('R', ['x0','x1']), ('R',['x1','x2']), ('not', ('R', ['x1','x3'])), ('not', ('R', ['x3','x1']))]), ('or', [('R', ['x0','x3']), ('R', ['x3','x0']), ('R', ['x2','x3']), ('R', ['x3','x2'])])))
 
     axioms = {
         'irreflexive': irr,
@@ -437,7 +437,7 @@ def print_theories():
         print()
 
 def test8():
-    phi = ('all', {'x', 'y', 'z'}, ('arrow', ('and', [('R', ['x','y']), ('R', ['y', 'z'])]),
+    phi = ('all', ['x', 'y', 'z'], ('arrow', ('and', [('R', ['x','y']), ('R', ['y', 'z'])]),
                                         ('not', ('R', ['z', 'x']))))
     print(check_entailment(theories()['Strict Partial Order'], phi, pred.tableau, 1))
 
@@ -473,65 +473,65 @@ def test_pred_tableaux_2():
 
         # Figure 6.1 (p. 138)
         ('arrow',
-            ('all', {'x'},
+            ('all', ['x'],
                 ('or', [
                     ('P', ['x']),
                     ('Q', ['x'])])),
             ('or', [
-                ('exists', {'x'}, ('P', ['x'])),
-                ('all', {'x'}, ('Q', ['x']))])),
+                ('exists', ['x'], ('P', ['x'])),
+                ('all', ['x'], ('Q', ['x']))])),
 
         # Exercise 6.1.1 (pp. 139-140) (not all are theorems)
         ('arrow',
-            ('exists', {'x'},
-                ('all', {'y'},
+            ('exists', ['x'],
+                ('all', ['y'],
                     ('R', ['x', 'y']))),
-            ('all', {'y'},
-                ('exists', {'x'},
+            ('all', ['y'],
+                ('exists', ['x'],
                     ('R', ['x', 'y'])))),
         ('arrow',
-            ('all', {'x'},
-                ('exists', {'y'},
+            ('all', ['x'],
+                ('exists', ['y'],
                     ('R', ['x', 'y']))),
-            ('exists', {'y'},
-                ('all', {'x'},
+            ('exists', ['y'],
+                ('all', ['x'],
                     ('R', ['x', 'y'])))),
-        ('exists', {'x'},
+        ('exists', ['x'],
             ('arrow',
                 ('P', ['x']),
-                ('all', {'x'}, ('P', ['x'])))),
+                ('all', ['x'], ('P', ['x'])))),
         ('arrow',
-            ('exists', {'x'},
+            ('exists', ['x'],
                 ('or', [
                     ('P', ['x']),
                     ('Q', ['x'])])),
             ('or', [
-                ('exists', {'x'}, ('P', ['x'])),
-                ('exists', {'x'}, ('Q', ['x']))])),
+                ('exists', ['x'], ('P', ['x'])),
+                ('exists', ['x'], ('Q', ['x']))])),
         ('arrow',
-            ('exists', {'x'},
+            ('exists', ['x'],
                 ('and', [
                     ('P', ['x']),
                     ('Q', ['x'])])),
             ('and', [
-                ('exists', {'x'}, ('P', ['x'])),
-                ('exists', {'x'}, ('Q', ['x']))])),
+                ('exists', ['x'], ('P', ['x'])),
+                ('exists', ['x'], ('Q', ['x']))])),
         ('arrow',
             ('and', [
-                ('exists', {'x'}, ('P', ['x'])),
-                ('all', {'x'}, ('Q', ['x']))]),
-            ('exists', {'x'}, ('and', [('P', ['x']), ('Q', ['x'])]))),
-        ('all', {'x'},
-            ('exists', {'y'},
-                ('all', {'z'},
-                    ('exists', {'w'},
+                ('exists', ['x'], ('P', ['x'])),
+                ('all', ['x'], ('Q', ['x']))]),
+            ('exists', ['x'], ('and', [('P', ['x']), ('Q', ['x'])]))),
+        ('all', ['x'],
+            ('exists', ['y'],
+                ('all', ['z'],
+                    ('exists', ['w'],
                         ('or', [
                             ('R', ['x', 'y']),
                             ('not', ('R', ['w', 'z']))]))))),
         ('arrow',
-            ('all', {'x'}, ('Q', ['x'])),
-            ('exists', {'x'},
-                ('all', {'y'},
+            ('all', ['x'], ('Q', ['x'])),
+            ('exists', ['x'],
+                ('all', ['y'],
                     ('or', [
                         ('not', ('P', ['y'])),
                         ('and', [
@@ -542,24 +542,24 @@ def test_pred_tableaux_2():
         # Exercise 6.1.2 (p. 140)
         ('arrow',
             ('and', [
-                ('all', {'x', 'y', 'z'},
+                ('all', ['x', 'y', 'z'],
                     ('arrow',
                         ('and', [
                             ('R', ['x', 'y']),
                             ('R', ['y', 'z'])]),
                         ('R', ['x', 'z']))),
-                ('all', {'x', 'y'},
+                ('all', ['x', 'y'],
                     ('arrow',
                         ('R', ['x', 'y']),
                         ('R', ['y', 'x']))),
-                ('all', {'x'}, ('exists', {'y'}, ('R', ['x', 'y'])))
+                ('all', ['x'], ('exists', ['y'], ('R', ['x', 'y'])))
             ]),
-            ('all', {'x'}, ('R', ['x', 'x']))),
+            ('all', ['x'], ('R', ['x', 'x']))),
 
         # Exercise 6.1.3 (p. 140)
-        ('exists', {'x'},
-            ('all', {'y'},
-                ('all', {'z'},
+        ('exists', ['x'],
+            ('all', ['y'],
+                ('all', ['z'],
                     ('arrow',
                         ('arrow',
                             ('P', ['y']),
@@ -567,9 +567,9 @@ def test_pred_tableaux_2():
                         ('arrow',
                             ('P', ['x']),
                             ('Q', ['x'])))))),
-        ('exists', {'x'},
-            ('all', {'y'},
-                ('all', {'z'},
+        ('exists', ['x'],
+            ('all', ['y'],
+                ('all', ['z'],
                     ('arrow',
                         ('or', [
                             ('P', ['y']),
@@ -577,10 +577,10 @@ def test_pred_tableaux_2():
                         ('or', [
                             ('P', ['x']),
                             ('Q', ['x'])]))))),
-        ('exists', {'x'},
-            ('all', {'y'},
-                ('all', {'z'},
-                    ('all', {'w'},
+        ('exists', ['x'],
+            ('all', ['y'],
+                ('all', ['z'],
+                    ('all', ['w'],
                         ('arrow',
                             ('or', [
                                 ('P', ['y']),
@@ -593,60 +593,60 @@ def test_pred_tableaux_2():
 
         # Example (p. 141)
         ('arrow',
-            ('all', {'x'},
+            ('all', ['x'],
                 ('or', [
                     ('P', ['x']),
                     ('Q', ['x'])])),
             ('or', [
-                ('exists', {'x'}, ('P', ['x'])),
-                ('all',    {'x'}, ('Q', ['x']))])),
+                ('exists', ['x'], ('P', ['x'])),
+                ('all',    ['x'], ('Q', ['x']))])),
 
         # Exercise 7.4.1 (p. 169)
         ('arrow',
-            ('exists', {'x'}, ('all',    {'y'}, ('R', ['x', 'y']))),
-            ('all',    {'y'}, ('exists', {'x'}, ('R', ['x', 'y'])))),
-        ('exists', {'x'},
+            ('exists', ['x'], ('all',    ['y'], ('R', ['x', 'y']))),
+            ('all',    ['y'], ('exists', ['x'], ('R', ['x', 'y'])))),
+        ('exists', ['x'],
             ('arrow',
                 ('P', ['x']),
-                ('all', {'x'}, ('P', ['x'])))),
+                ('all', ['x'], ('P', ['x'])))),
         ('arrow',
-            ('all', {'x'},
-                ('all', {'y'},
+            ('all', ['x'],
+                ('all', ['y'],
                     ('and', [
                         ('P', ['x']),
                         ('P', ['y'])]))),
-            ('exists', {'x'},
-                ('exists', {'y'},
+            ('exists', ['x'],
+                ('exists', ['y'],
                     ('or', [
                         ('P', ['x']),
                         ('P', ['y'])])))),
         ('arrow',
-            ('all', {'x'},
-                ('all', {'y'},
+            ('all', ['x'],
+                ('all', ['y'],
                     ('and', [
                         ('P', ['x']),
                         ('P', ['y'])]))),
-            ('all', {'x'},
-                ('all', {'y'},
+            ('all', ['x'],
+                ('all', ['y'],
                     ('or', [
                         ('P', ['x']),
                         ('P', ['y'])])))),
-        ('all', {'x'},
-            ('exists', {'y'},
-                ('all', {'z'},
-                    ('exists', {'w'},
+        ('all', ['x'],
+            ('exists', ['y'],
+                ('all', ['z'],
+                    ('exists', ['w'],
                         ('or', [
                             ('R', ['x', 'y']),
                             ('not', ('R', ['w', 'z']))]))))),
 
         # Example (p. 184)
         ('arrow',
-            ('exists', {'w'},
-                ('all', {'x'},
+            ('exists', ['w'],
+                ('all', ['x'],
                     ('R', ['x', 'w', ('f', ['x', 'w'])]))),
-            ('exists', {'w'},
-                ('all', {'x'},
-                    ('exists', {'y'},
+            ('exists', ['w'],
+                ('all', ['x'],
+                    ('exists', ['y'],
                         ('R', ['x', 'w', 'y']))))),
 
         #
@@ -654,19 +654,18 @@ def test_pred_tableaux_2():
         #
 
         # Reflexitivity, symmetry, transitivitiy.
-        ('all', {'x'}, ('R', ['x', 'x'])),
-        ('all', {'x', 'y'}, ('arrow', ('R', ['x', 'y']), ('R', ['y', 'x']))),
-        ('all', {'x', 'y', 'z'},
+        ('all', ['x'], ('R', ['x', 'x'])),
+        ('all', ['x', 'y'], ('arrow', ('R', ['x', 'y']), ('R', ['y', 'x']))),
+        ('all', ['x', 'y', 'z'],
             ('arrow',
                 ('and', [('R', ['x', 'y']), ('R', ['y', 'z'])]),
                 ('R', ['x', 'z']))),
 
         ('arrow',
-            ('all', {'x'}, ('or', [('P', ['x']), ('Q', ['x'])])),
-            ('or', [('all', {'x'}, ('P', ['x'])), ('all', {'x'}, ('Q', ['x']))])
+            ('all', ['x'], ('or', [('P', ['x']), ('Q', ['x'])])),
+            ('or', [('all', ['x'], ('P', ['x'])), ('all', ['x'], ('Q', ['x']))])
         )
     ]
-
 
     for f in fmls:
         print(pred.fml_to_str(f))
@@ -680,31 +679,31 @@ def test_pred_tableaux_2():
 # to
 #   return f[0][0] in 'PQRS'
 def schubert_steamroller():
-    wolf_type         = ('exists', {'x'}, ('Pwolf',         ['x']))
-    fox_type          = ('exists', {'x'}, ('Pfox',          ['x']))
-    bird_type         = ('exists', {'x'}, ('Pbird',         ['x']))
-    caterpillar_type  = ('exists', {'x'}, ('Pcaterpillar',  ['x']))
-    snail_type        = ('exists', {'x'}, ('Psnail',        ['x']))
+    wolf_type         = ('exists', ['x'], ('Pwolf',         ['x']))
+    fox_type          = ('exists', ['x'], ('Pfox',          ['x']))
+    bird_type         = ('exists', ['x'], ('Pbird',         ['x']))
+    caterpillar_type  = ('exists', ['x'], ('Pcaterpillar',  ['x']))
+    snail_type        = ('exists', ['x'], ('Psnail',        ['x']))
 
-    pel47_1_1 = ('all', {'x'}, ('arrow', ('Pwolf',        ['x']), ('Panimal', ['x'])))
-    pel47_2_1 = ('all', {'x'}, ('arrow', ('Pfox',         ['x']), ('Panimal', ['x'])))
-    pel47_3_1 = ('all', {'x'}, ('arrow', ('Pbird',        ['x']), ('Panimal', ['x'])))
-    pel47_4_1 = ('all', {'x'}, ('arrow', ('Pcaterpillar', ['x']), ('Panimal', ['x'])))
-    pel47_4_2 = ('all', {'x'}, ('arrow', ('Psnail',       ['x']), ('Panimal', ['x'])))
+    pel47_1_1 = ('all', ['x'], ('arrow', ('Pwolf',        ['x']), ('Panimal', ['x'])))
+    pel47_2_1 = ('all', ['x'], ('arrow', ('Pfox',         ['x']), ('Panimal', ['x'])))
+    pel47_3_1 = ('all', ['x'], ('arrow', ('Pbird',        ['x']), ('Panimal', ['x'])))
+    pel47_4_1 = ('all', ['x'], ('arrow', ('Pcaterpillar', ['x']), ('Panimal', ['x'])))
+    pel47_4_2 = ('all', ['x'], ('arrow', ('Psnail',       ['x']), ('Panimal', ['x'])))
 
-    grain_type = ('exists', {'x'}, ('Pgrain', ['x']))
+    grain_type = ('exists', ['x'], ('Pgrain', ['x']))
 
-    pel47_7 = ('all', {'x'},
+    pel47_7 = ('all', ['x'],
         ('arrow',
             ('Panimal', ['x']),
             ('or', [
-                ('all', {'y'},  ('arrow', ('Pplant', ['y']), ('Peats', ['x', 'y']))),
-                ('all', {'y1'},
+                ('all', ['y'],  ('arrow', ('Pplant', ['y']), ('Peats', ['x', 'y']))),
+                ('all', ['y1'],
                     ('arrow',
                         ('and', [
                             ('Panimal', ['y1']),
                             ('Pmuch_smaller', ['y1', 'x']),
-                            ('exists', {'z'}, ('and', [('Pplant', ['z']), ('Peats', ['y1', 'z'])]))
+                            ('exists', ['z'], ('and', [('Pplant', ['z']), ('Peats', ['y1', 'z'])]))
                         ]),
                         ('Peats', ['x', 'y1'])
                     )
@@ -713,66 +712,66 @@ def schubert_steamroller():
         )
     )
 
-    pel47_8 = ('all', {'x', 'y'},
+    pel47_8 = ('all', ['x', 'y'],
         ('arrow',
             ('and', [('Pbird', ['y']), ('Psnail', ['x'])]),
             ('Pmuch_smaller', ['x', 'y'])
         )
     )
 
-    pel47_8a = ('all', {'x', 'y'},
+    pel47_8a = ('all', ['x', 'y'],
         ('arrow',
             ('and', [('Pbird', ['y'], ('Pcaterpillar', ['x']))]),
             ('Pmuch_smaller', ['x', 'y'])
         )
     )
 
-    pel47_9 = ('all', {'x', 'y'},
+    pel47_9 = ('all', ['x', 'y'],
         ('arrow',
             ('and', [('Pbird', ['x'], ('Pwolf', ['y']))]),
             ('Pmuch_smaller', ['x', 'y'])
         )
     )
 
-    pel47_10 = ('all', {'x', 'y'},
+    pel47_10 = ('all', ['x', 'y'],
         ('arrow',
             ('and', [('Pfox', ['x'], ('Pwolf', ['y']))]),
             ('Pmuch_smaller', ['x', 'y'])
         )
     )
 
-    pel47_11 = ('all', {'x', 'y'},
+    pel47_11 = ('all', ['x', 'y'],
         ('arrow',
             ('and', [('Pwolf', ['x'], ('Pfox', ['y']))]),
             ('not', ('Peats', ['x', 'y']))
         )
     )
 
-    pel47_11a = ('all', {'x', 'y'},
+    pel47_11a = ('all', ['x', 'y'],
         ('arrow',
             ('and', [('Pwolf', ['x'], ('Pgrain', ['y']))]),
             ('not', ('Peats', ['x', 'y']))
         )
     )
 
-    pel47_12 = ('all', {'x', 'y'},
+    pel47_12 = ('all', ['x', 'y'],
         ('arrow',
             ('and', [('Pbird', ['x'], ('Pcaterpillar', ['y']))]),
             ('Peats', ['x', 'y'])
         )
     )
 
-    pel47_13 = ('all', {'x', 'y'},
+    pel47_13 = ('all', ['x', 'y'],
         ('arrow',
             ('and', [('Pbird', ['x'], ('Psnail', ['y']))]),
             ('not', ('Peats', ['x', 'y']))
         )
     )
 
-    pel47_14 = ('all', {'x'},
+    pel47_14 = ('all', ['x'],
         ('arrow',
             ('Pcaterpillar', ['x']),
-            ('exists', {'y'},
+            ('exists', ['y'],
                 ('and', [
                     ('Pplant', ['y']),
                     ('Peats', ['x', 'y'])
@@ -781,10 +780,10 @@ def schubert_steamroller():
         )
     )
 
-    pel47_14a = ('all', {'x'},
+    pel47_14a = ('all', ['x'],
         ('arrow',
             ('Psnail', ['x']),
-            ('exists', {'y'},
+            ('exists', ['y'],
                 ('and', [
                     ('Pplant', ['y']),
                     ('Peats', ['x', 'y'])
@@ -793,11 +792,11 @@ def schubert_steamroller():
         )
     )
 
-    conjecture = ('exists', {'x', 'y'},
+    conjecture = ('exists', ['x', 'y'],
         ('and', [
             ('Panimal', ['x']),
             ('Panimal', ['y']),
-            ('exists', {'z'},
+            ('exists', ['z'],
                 ('and', [
                     ('Pgrain', ['z']),
                     ('Peats', ['y', 'z']),

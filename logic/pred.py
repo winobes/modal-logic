@@ -21,41 +21,38 @@ def variable(x):
 def function(x):
     return isinstance(x, tuple) and x[0][0] in 'abcdfghj'
 
-# Return a set of free variables from a formula (assuming bound
+# Return a list of free variables from a formula (assuming bound
 # vars are initially considered bound).
 def get_free_vars(f, bound_vars):
     if pred(f):
-        free_vars = set()
+        free_vars = []
         for term in f[1]:
-            free_vars = free_vars.union(get_free_vars_in_term(f[1],
-                bound_vars))
+            free_vars += get_free_vars_in_term(f[1], bound_vars)
         return free_vars
     if f[0] == 'not':
         return get_free_vars(f[1], bound_vars)
     if f[0] == 'and' or f[0] == 'or':
-        free_vars = set()
+        free_vars = []
         for g in f[1]:
-            free_vars = free_vars.union(get_free_vars(g, bound_vars))
+            free_vars += get_free_vars(g, bound_vars)
         return free_vars
     if f[0] == 'arrow':
-        free_vars = get_free_vars(f[1], bound_vars)
-        free_vars = free_vars.union(get_free_vars(f[2], bound_vars))
-        return free_vars
+        return get_free_vars(f[1], bound_vars) + get_free_vars(f[2],
+            bound_vars)
     if f[0] == 'all' or f[0] == 'exists':
-        return get_free_vars(f[2], bound_vars.union(f[1]))
+        return get_free_vars(f[2], bound_vars + f[1])
     else:
         raise ValueError('unknown operator: %s' % f[0])
 
-# Herper functtion for get_free_vars
+# Helper function for get_free_vars().
 def get_free_vars_in_term(termlist, bound_vars):
-    free_vars = set()
+    free_vars = []
     for t in termlist:
         if variable(t):
             if t not in bound_vars:
-                free_vars.add(t)
+                free_vars.append(t)
         if function(t):
-            free_vars = free_vars.union(get_free_vars_in_term(t[1],
-                bound_vars))
+            free_vars += get_free_vars_in_term(t[1], bound_vars)
     return free_vars
 
 # Helper function for skolemize(): return a list of all function symbols used
