@@ -39,7 +39,7 @@ def get_free_vars(f, bound_vars):
         return free_vars
     if f[0] == 'arrow':
         free_vars = get_free_vars(f[1], bound_vars)
-        free_vars.union(get_free_vars(f[2], bound_vars))
+        free_vars = free_vars.union(get_free_vars(f[2], bound_vars))
         return free_vars
     if f[0] == 'all' or f[0] == 'exists':
         return get_free_vars(f[2], bound_vars.union(f[1]))
