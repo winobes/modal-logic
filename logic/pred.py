@@ -284,25 +284,24 @@ def term_to_str(term):
 def subst_to_str(subst):
     string = '{'
     if subst != None:
-        for v in subst:
-            string += v + ' -> ' + term_to_str(subst[v]) + ', '
+        for s in subst:
+            string += s[0] + ' -> ' + term_to_str(s[1]) + ', '
         if len(string) > 1:
             string = string[:-2]
     string += '}'
     return string
 
-
 #
 # Substitution
 #
 
+# A substitution is a list of pairs. The first element of this pair is a
+# variable and the second element a term.
+
 # Return the composition of two substitutions. That is, return the substitution
 # equivalent to the application of s1 after s2.
 def compose_subst(s1, s2):
-    comp = {}
-    comp.update(s1)
-    comp.update({t:subst_term(s1, s2[t]) for t in s2})
-    return comp 
+    return [(s[0], subst_term(s1, s[1])) for s in s2] + s1
 
 # Helper function for skolemize():
 def subst_formula(subst, f):
@@ -316,8 +315,9 @@ def subst_formula(subst, f):
         return ('arrow', subst_formula(subst, f[1]),
             subst_formula(subst, f[2]))
     if f[0] == 'all' or f[0] == 'exists':
-        return (f[0], f[1], 
-            subst_formula({v:subst[v] for v in subst if not v in f[1]}, f[2]))
+        # Remove bound variables to prevent them from being substituted.
+        subst = [s for s in subst if not s[0] in f[1]]
+        return (f[0], f[1], subst_formula(subst, f[2]))
     raise ValueError('unknown operator: %s' % f[0])
 
 # Apply a substitution to a list of terms.
@@ -327,7 +327,10 @@ def subst_termlist(subst, termlist):
 # Apply a substitution to a term.
 def subst_term(subst, term):
     if variable(term):
-        return subst[term] if term in subst else term
+        for s in subst:
+            if s[0] == term:
+                return s[1]
+        return term
     else:
         return (term[0], subst_termlist(subst, term[1]))
 
@@ -335,20 +338,17 @@ def subst_term(subst, term):
 # Unification
 #
 
-
-# - A list of terms simply is the list of arguments of a predicate or a
-#   function.
-# - A substitution is a dictionary mapping from variables to terms
+# A list of terms simply is the list of arguments of a predicate or a function.
 
 # Return a substitution that unifies two lists of terms. Return None if no such
 # substitution exists.
 def unify_termlists(t1, t2):
     if len(t1) == len(t2) == 0:
-        return {}
+        return []
     if len(t1) != len(t2):
         return None
     else:
-        subst = {}
+        subst = []
         for (u1, u2) in zip(t1, t2):
             v1 = subst_term(subst, u1)
             v2 = subst_term(subst, u2)
@@ -363,19 +363,19 @@ def unify_termlists(t1, t2):
 def unify_terms(t1, t2):
     if variable(t1) and variable(t2):
         if t1 == t2:
-            return {}
+            return []
         else:
-            return {t1:t2}
+            return [(t1, t2)]
     if variable(t1) and not variable(t2):
         if t1 in variables_in_term(t2):
             return None
         else:
-            return {t1:t2}
+            return [(t1, t2)]
     if not variable(t1) and variable(t2):
         if t2 in variables_in_term(t1):
             return None
         else:
-            return {t2:t1}
+            return [(t2, t1)]
     else:
         if t1[0] != t2[0]:
             return None
@@ -446,7 +446,7 @@ def tableau_expand_do(tree, gdepth, skolem_func_counter, uni_var_counter):
             for var in f[1]:
                 parameter = 'x' + str(uni_var_counter)
                 uni_var_counter += 1
-                new_f = subst_formula({var:parameter}, new_f)
+                new_f = subst_formula([(var, parameter)], new_f)
             tree[0].append(tableau_canonize(new_f))
             return tableau_expand_do(tree, gdepth, skolem_func_counter, uni_var_counter)
 
@@ -505,7 +505,7 @@ def tableau_skolemize(f, exists_vars, func_counter):
             func_counter += 1
         skolem_func = 'f' + str(func_counter)
         used_funcs.append(skolem_func)
-        g = subst_formula({v:(skolem_func, free_vars)}, g)
+        g = subst_formula([(v, (skolem_func, free_vars))], g)
     return (g, func_counter + 1)
 
 def tableau_closed(tree):
@@ -516,11 +516,10 @@ def tableau_closed(tree):
             for f in branch:
                 util.dprint('  ', fml_to_str(f))
         util.dprint()
-    substs = {}
+    substs = []
     for branch in tree:
         newsubsts = tableau_branch_closed(branch, substs)
         if util.debug:
-            util.dprint('--')
             util.dprint('current substs: ', subst_to_str(substs))
             util.dprint('new substs:     ', subst_to_str(newsubsts))
         if newsubsts == None:
@@ -528,6 +527,7 @@ def tableau_closed(tree):
         substs = compose_subst(newsubsts, substs)
         if util.debug:
             util.dprint('composed substs:', subst_to_str(substs))
+            util.dprint()
     if util.debug:
         util.dprint('tableau closed with', subst_to_str(substs))
     return True
