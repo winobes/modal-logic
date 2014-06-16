@@ -37,10 +37,14 @@ def get_free_vars(f, bound_vars):
         for g in f[1]:
             free_vars = free_vars.union(get_free_vars(g, bound_vars))
         return free_vars
+    if f[0] == 'arrow':
+        free_vars = get_free_vars(f[1], bound_vars)
+        free_vars.union(get_free_vars(f[2], bound_vars))
+        return free_vars
     if f[0] == 'all' or f[0] == 'exists':
         return get_free_vars(f[2], bound_vars.union(f[1]))
     else:
-        return set()
+        raise ValueError('unknown operator: %s' % f[0])
 
 # Herper functtion for get_free_vars
 def get_free_vars_in_term(termlist, bound_vars):
