@@ -24,6 +24,10 @@ def function(x):
 # Return a list of free variables from a formula (assuming bound
 # vars are initially considered bound).
 def get_free_vars(f, bound_vars):
+    return util.prune_list(get_free_vars_do(f, bound_vars))
+
+# Helper function for get_free_vars().
+def get_free_vars_do(f, bound_vars):
     if pred(f):
         free_vars = []
         for term in f[1]:
@@ -44,7 +48,7 @@ def get_free_vars(f, bound_vars):
     else:
         raise ValueError('unknown operator: %s' % f[0])
 
-# Helper function for get_free_vars().
+# Helper function for get_free_vars_do().
 def get_free_vars_in_term(termlist, bound_vars):
     free_vars = []
     for t in termlist:
@@ -501,7 +505,7 @@ def tableau_skolemize(f, exists_vars, func_counter):
             func_counter += 1
         skolem_func = 'f' + str(func_counter)
         used_funcs.append(skolem_func)
-        g = subst_formula({v:(skolem_func, list(free_vars))}, g)
+        g = subst_formula({v:(skolem_func, free_vars)}, g)
     return (g, func_counter + 1)
 
 def tableau_closed(tree):
