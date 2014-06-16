@@ -487,14 +487,14 @@ def test_pred_tableaux_2():
                 ('all', {'y'},
                     ('R', ['x', 'y']))),
             ('all', {'y'},
-                ('exists', 'x',
+                ('exists', {'x'},
                     ('R', ['x', 'y'])))),
         ('arrow',
             ('all', {'x'},
                 ('exists', {'y'},
                     ('R', ['x', 'y']))),
             ('exists', {'y'},
-                ('all', 'x',
+                ('all', {'x'},
                     ('R', ['x', 'y'])))),
         ('exists', {'x'},
             ('arrow',
@@ -833,6 +833,4 @@ def demonstrate_bug():
 
 util.debug = 0
 
-demonstrate_bug()
-
-
+test_pred_tableaux_2()
